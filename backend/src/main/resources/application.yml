@@ -16,10 +16,10 @@ spring:
       mode: never
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:192.168.12.12}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DB:0}
+      password: ${REDIS_PASSWORD:Icit#0217}
+      database: ${REDIS_DB:7}
       timeout: 3000ms
       lettuce:
         pool:
