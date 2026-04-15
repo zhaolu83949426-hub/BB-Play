@@ -26,9 +26,12 @@ public class UserFavoriteController {
      * 新增或刷新收藏
      */
     @PostMapping("/{resourceId}")
-    public ApiResponse<Void> addFavorite(@PathVariable Long resourceId, HttpServletRequest request) {
+    public ApiResponse<Void> addFavorite(
+            @PathVariable Long resourceId,
+            @RequestParam(defaultValue = "AUDIO") String resourceType,
+            HttpServletRequest request) {
         String uid = (String) request.getAttribute(UserIdentityInterceptor.UID_ATTRIBUTE);
-        favoriteService.addOrRefreshFavorite(uid, resourceId);
+        favoriteService.addOrRefreshFavorite(uid, resourceId, resourceType);
         return ApiResponse.success();
     }
 

@@ -5,7 +5,9 @@ import com.bbplay.app.constant.RedisKeyConstants;
 import com.bbplay.app.constant.RedisTtlConstants;
 import com.bbplay.app.dto.FavoriteItem;
 import com.bbplay.app.entity.MediaResource;
+import com.bbplay.app.entity.PictureBook;
 import com.bbplay.app.mapper.MediaResourceMapper;
+import com.bbplay.app.mapper.PictureBookMapper;
 import com.bbplay.app.service.FavoriteService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,23 +31,33 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final MediaResourceMapper mediaResourceMapper;
+    private final PictureBookMapper pictureBookMapper;
     private final ObjectMapper objectMapper;
 
     @Override
-    public void addOrRefreshFavorite(String uid, Long resourceId) {
-        // 查询资源信息
-        MediaResource resource = mediaResourceMapper.selectById(resourceId);
-        if (resource == null) {
-            throw new IllegalArgumentException("资源不存在");
-        }
-
-        // 构建收藏项
+    public void addOrRefreshFavorite(String uid, Long resourceId, String resourceType) {
         FavoriteItem item = new FavoriteItem();
         item.setResourceId(resourceId);
-        item.setResourceType(resource.getMediaType());
-        item.setTitle(resource.getTitle());
-        item.setCoverUrl(resource.getCoverUrl());
         item.setUpdatedAt(LocalDateTime.now());
+
+        // 根据资源类型查询资源信息
+        if ("PICTURE_BOOK".equals(resourceType)) {
+            PictureBook book = pictureBookMapper.selectById(resourceId);
+            if (book == null) {
+                throw new IllegalArgumentException("绘本不存在");
+            }
+            item.setResourceType("PICTURE_BOOK");
+            item.setTitle(book.getTitle());
+            item.setCoverUrl(book.getCoverUrl());
+        } else {
+            MediaResource resource = mediaResourceMapper.selectById(resourceId);
+            if (resource == null) {
+                throw new IllegalArgumentException("资源不存在");
+            }
+            item.setResourceType(resource.getMediaType());
+            item.setTitle(resource.getTitle());
+            item.setCoverUrl(resource.getCoverUrl());
+        }
 
         // 当前时间戳作为 score
         long timestamp = System.currentTimeMillis();

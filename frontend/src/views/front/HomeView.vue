@@ -26,21 +26,38 @@
       <van-tabs v-model:active="tabIndex" @change="onTabChange">
         <van-tab title="音频"></van-tab>
         <van-tab title="视频"></van-tab>
+        <van-tab title="绘本"></van-tab>
       </van-tabs>
     </div>
 
     <div class="section list-wrap">
-      <div v-for="item in list" :key="item.id" class="card media-row">
-        <img :src="item.coverUrl || defaultCover" class="cover" @error="onCoverError" />
-        <div class="meta">
-          <div class="name">{{ displayName(item.title, item.nickname) }}</div>
-          <div class="sub line">{{ item.alias || '-' }} | {{ item.series }} | {{ ageLabel(item.ageRange) }}</div>
-          <div class="sub line">播放 {{ item.clickCount }} | {{ item.ratingAvg || 0 }}★</div>
+      <!-- 绘本网格布局 -->
+      <template v-if="activeMediaType === 'PICTURE_BOOK'">
+        <div class="book-grid">
+          <PictureBookCard 
+            v-for="book in list" 
+            :key="book.id" 
+            :book="book"
+            @click="onOpenBook(book)"
+          />
         </div>
-        <van-button size="small" type="primary" round @click="onPlay(item)">
-          {{ activeMediaType === 'AUDIO' ? '播放' : '观看' }}
-        </van-button>
-      </div>
+      </template>
+      
+      <!-- 音频/视频列表布局 -->
+      <template v-else>
+        <div v-for="item in list" :key="item.id" class="card media-row">
+          <img :src="item.coverUrl || defaultCover" class="cover" @error="onCoverError" />
+          <div class="meta">
+            <div class="name">{{ displayName(item.title, item.nickname) }}</div>
+            <div class="sub line">{{ item.alias || '-' }} | {{ item.series }} | {{ ageLabel(item.ageRange) }}</div>
+            <div class="sub line">播放 {{ item.clickCount }} | {{ item.ratingAvg || 0 }}★</div>
+          </div>
+          <van-button size="small" type="primary" round @click="onPlay(item)">
+            {{ activeMediaType === 'AUDIO' ? '播放' : '观看' }}
+          </van-button>
+        </div>
+      </template>
+      
       <van-empty v-if="!list.length && !loading" description="暂无内容" />
       <van-button v-if="!finished && list.length" block plain type="primary" :loading="loading" @click="loadMore">
         加载更多
@@ -130,12 +147,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { getMediaList, postMediaClick, postMediaRate } from '../../api/media';
+import { getPictureBookList } from '../../api/pictureBook';
 import { getSeriesOptions } from '../../api/series';
 import { saveAudioPlayerState, getAudioPlayerState } from '../../api/audioPlayer';
 import { recordPlay } from '../../api/recentPlay';
 import type { MediaItem } from '../../types/media';
 import { PlayMode, type AudioPlaylistItem } from '../../types/media';
 import { ageLabel, displayName } from '../../utils/format';
+import PictureBookCard from '../../components/PictureBookCard.vue';
 
 const defaultCover = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22160%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23dce8fb%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%235f7297%22 font-size=%2214%22%3E封面%3C/text%3E%3C/svg%3E';
 const router = useRouter();
@@ -168,7 +187,8 @@ const playMode = ref<PlayMode>(PlayMode.LIST_LOOP);
 const shuffleBag = ref<number[]>([]);
 let saveStateTimer: number | undefined;
 
-const activeMediaType = computed(() => (tabIndex.value === 0 ? 'AUDIO' : 'VIDEO'));
+const mediaTypeMap = ['AUDIO', 'VIDEO', 'PICTURE_BOOK'];
+const activeMediaType = computed(() => mediaTypeMap[tabIndex.value]);
 const currentTimeText = computed(() => formatSeconds((audioRef.value?.currentTime || 0)));
 const totalTimeText = computed(() => formatSeconds((audioRef.value?.duration || 0)));
 
@@ -242,7 +262,6 @@ async function fetchList(reset: boolean) {
   if (reset) page.value = 1;
   const params = {
     keyword: keyword.value || undefined,
-    mediaType: activeMediaType.value,
     ageRange: ageRange.value || undefined,
     seriesId: seriesId.value || undefined,
     sortBy: sortBy.value,
@@ -251,7 +270,12 @@ async function fetchList(reset: boolean) {
     pageSize
   };
   try {
-    const data = await getMediaList(params);
+    let data;
+    if (activeMediaType.value === 'PICTURE_BOOK') {
+      data = await getPictureBookList(params);
+    } else {
+      data = await getMediaList({ ...params, mediaType: activeMediaType.value });
+    }
     list.value = reset ? data.records : [...list.value, ...data.records];
     finished.value = list.value.length >= data.total;
   } finally {
@@ -262,6 +286,10 @@ async function fetchList(reset: boolean) {
 function onSearch() {
   keyword.value = keywordInput.value.trim();
   fetchList(true);
+}
+
+function onOpenBook(book: any) {
+  router.push(`/picture-book/${book.id}`);
 }
 
 function onTabChange(index: number) {
@@ -790,18 +818,10 @@ async function submitAudioRate() {
   text-align: center;
 }
 
-.rate-wrap .title {
-  margin-bottom: 16px;
-  font-size: 16px;
-}
-
-.rate-wrap .van-rate {
-  margin: 16px 0;
-}
-
-.quick-links {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
 }
 </style>

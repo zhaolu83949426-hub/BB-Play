@@ -11,8 +11,10 @@ export interface FavoriteItem {
 /**
  * 新增或刷新收藏
  */
-export function addFavorite(resourceId: number) {
-  return http.post<void>(`/user/favorites/${resourceId}`)
+export function addFavorite(resourceId: number, resourceType: string = 'AUDIO') {
+  return http.post<void>(`/user/favorites/${resourceId}`, null, {
+    params: { resourceType }
+  })
 }
 
 /**

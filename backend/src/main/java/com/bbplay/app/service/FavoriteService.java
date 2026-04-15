@@ -13,10 +13,11 @@ public interface FavoriteService {
      * 新增或刷新收藏
      * 同一资源重复收藏时更新时间并置顶
      *
-     * @param uid        用户 uid
-     * @param resourceId 资源 ID
+     * @param uid          用户 uid
+     * @param resourceId   资源 ID
+     * @param resourceType 资源类型（AUDIO/VIDEO/PICTURE_BOOK）
      */
-    void addOrRefreshFavorite(String uid, Long resourceId);
+    void addOrRefreshFavorite(String uid, Long resourceId, String resourceType);
 
     /**
      * 取消收藏

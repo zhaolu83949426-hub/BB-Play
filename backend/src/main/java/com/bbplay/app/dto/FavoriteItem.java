@@ -16,7 +16,7 @@ public class FavoriteItem {
     private Long resourceId;
 
     /**
-     * 资源类型（AUDIO / VIDEO）
+     * 资源类型（AUDIO / VIDEO / PICTURE_BOOK）
      */
     private String resourceType;
 

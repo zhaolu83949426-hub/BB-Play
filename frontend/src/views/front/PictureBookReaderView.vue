@@ -65,6 +65,7 @@ import { showToast } from 'vant'
 import { getPictureBookDetail, postPictureBookClick } from '../../api/pictureBook'
 import { getBookProgress, updateBookProgress } from '../../api/bookProgress'
 import { synthesizeTts } from '../../api/tts'
+import { addFavorite, removeFavorite, getFavoriteStatus } from '../../api/favorite'
 import type { PictureBookDetail, PictureBookPage } from '../../types/pictureBook'
 
 const route = useRoute()
@@ -87,6 +88,7 @@ let currentAudio: HTMLAudioElement | null = null
 onMounted(async () => {
   await loadBook()
   await loadProgress()
+  await loadFavoriteStatus()
   postPictureBookClick(bookId)
   
   if (playMode.value === 'AUTO') {
@@ -119,6 +121,15 @@ async function loadProgress() {
     }
   } catch (error) {
     // 没有进度记录，使用默认值
+  }
+}
+
+async function loadFavoriteStatus() {
+  try {
+    const status = await getFavoriteStatus(bookId)
+    isFavorite.value = status.isFavorited
+  } catch (error) {
+    // 忽略错误
   }
 }
 
@@ -231,9 +242,20 @@ function toggleLock() {
   showToast(locked.value ? '已锁定翻页' : '已解锁翻页')
 }
 
-function onToggleFavorite() {
-  isFavorite.value = !isFavorite.value
-  showToast(isFavorite.value ? '已收藏' : '已取消收藏')
+async function onToggleFavorite() {
+  try {
+    if (isFavorite.value) {
+      await removeFavorite(bookId)
+      isFavorite.value = false
+      showToast('已取消收藏')
+    } else {
+      await addFavorite(bookId, 'PICTURE_BOOK')
+      isFavorite.value = true
+      showToast('已收藏')
+    }
+  } catch (error) {
+    showToast('操作失败')
+  }
 }
 
 function onBack() {
