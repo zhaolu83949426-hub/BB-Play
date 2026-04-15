@@ -48,6 +48,13 @@ public class RedisKeyConstants {
     public static final String AUDIO_STATE_PREFIX = "bbplay:audio:state:";
 
     /**
+     * 绘本阅读进度键前缀：bbplay:book:progress:{uid}
+     * 存储类型：Hash
+     * 字段：bookId -> JSON(BookProgressItem)
+     */
+    public static final String BOOK_PROGRESS_PREFIX = "bbplay:book:progress:";
+
+    /**
      * 构建用户标识键
      */
     public static String buildUidKey(String uid) {
@@ -87,5 +94,12 @@ public class RedisKeyConstants {
      */
     public static String buildAudioStateKey(String uid) {
         return AUDIO_STATE_PREFIX + uid;
+    }
+
+    /**
+     * 构建绘本阅读进度键
+     */
+    public static String buildBookProgressKey(String uid) {
+        return BOOK_PROGRESS_PREFIX + uid;
     }
 }

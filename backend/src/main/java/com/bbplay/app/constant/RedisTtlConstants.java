@@ -26,4 +26,9 @@ public class RedisTtlConstants {
      * 音频播放器状态 TTL：30 天
      */
     public static final Duration AUDIO_STATE_TTL = Duration.ofDays(30);
+
+    /**
+     * 绘本阅读进度 TTL：180 天
+     */
+    public static final Duration BOOK_PROGRESS_TTL = Duration.ofDays(180);
 }

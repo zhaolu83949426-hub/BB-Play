@@ -125,3 +125,78 @@ INSERT INTO media_rating (id, media_id, score, device_id, created_at, deleted) V
 (4009, 3002, 5, 'demo-device-009', NOW() - INTERVAL '4 days', 0),
 (4010, 3002, 5, 'demo-device-010', NOW() - INTERVAL '3 days', 0)
 ON CONFLICT (id) DO NOTHING;
+
+-- 三期：绘本资源表
+CREATE TABLE IF NOT EXISTS picture_book (
+    id BIGINT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    nickname VARCHAR(50),
+    alias VARCHAR(100),
+    series_id BIGINT NOT NULL,
+    age_range VARCHAR(20) NOT NULL,
+    cover_url VARCHAR(500) NOT NULL,
+    description VARCHAR(500),
+    page_count INTEGER NOT NULL DEFAULT 0,
+    is_published BOOLEAN NOT NULL DEFAULT FALSE,
+    is_abnormal BOOLEAN NOT NULL DEFAULT FALSE,
+    abnormal_remark VARCHAR(200),
+    click_count BIGINT NOT NULL DEFAULT 0,
+    rating_avg NUMERIC(4, 2) NOT NULL DEFAULT 0,
+    rating_count INTEGER NOT NULL DEFAULT 0,
+    complete_read_count BIGINT NOT NULL DEFAULT 0,
+    sort_weight INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted SMALLINT NOT NULL DEFAULT 0
+);
+
+-- 三期：绘本页面表
+CREATE TABLE IF NOT EXISTS picture_book_page (
+    id BIGINT PRIMARY KEY,
+    book_id BIGINT NOT NULL,
+    page_number INTEGER NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    text_content TEXT,
+    audio_url VARCHAR(500),
+    duration_sec INTEGER,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted SMALLINT NOT NULL DEFAULT 0
+);
+
+-- 三期：绘本相关索引
+CREATE INDEX IF NOT EXISTS idx_picture_book_filter
+    ON picture_book (is_published, is_abnormal, age_range, series_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_picture_book_click ON picture_book (click_count DESC);
+CREATE INDEX IF NOT EXISTS idx_picture_book_rating ON picture_book (rating_avg DESC);
+CREATE INDEX IF NOT EXISTS idx_picture_book_page_book_id ON picture_book_page (book_id, page_number);
+
+-- 三期：插入演示绘本数据
+INSERT INTO picture_book (id, title, nickname, alias, series_id, age_range, cover_url, description, page_count, is_published, is_abnormal, abnormal_remark, click_count, rating_avg, rating_count, complete_read_count, sort_weight, created_at, updated_at, deleted) VALUES
+(5001, '小兔子找萝卜', '兔子找萝卜', '找萝卜', 1004, 'AGE_0_2', 'https://picsum.photos/seed/book1/400/300', '小兔子肚子饿了，它要去找萝卜吃。一路上遇到了很多小动物。', 5, TRUE, FALSE, NULL, 234, 4.8, 45, 156, 100, NOW() - INTERVAL '5 days', NOW(), 0),
+(5002, '小猪佩奇的一天', '佩奇的一天', '佩奇日常', 1002, 'AGE_2_4', 'https://picsum.photos/seed/book2/400/300', '跟着佩奇一起度过快乐的一天，从早上起床到晚上睡觉。', 8, TRUE, FALSE, NULL, 567, 4.9, 89, 234, 95, NOW() - INTERVAL '4 days', NOW(), 0),
+(5003, '认识颜色', '学颜色', '颜色启蒙', 1007, 'AGE_0_2', 'https://picsum.photos/seed/book3/400/300', '红色、黄色、蓝色...让宝宝认识各种美丽的颜色。', 6, TRUE, FALSE, NULL, 423, 4.7, 67, 178, 90, NOW() - INTERVAL '3 days', NOW(), 0),
+(5004, '数字1到5', '学数字', '数字启蒙', 1007, 'AGE_2_4', 'https://picsum.photos/seed/book4/400/300', '通过可爱的图片，让宝宝认识数字1到5。', 5, TRUE, FALSE, NULL, 345, 4.6, 54, 123, 85, NOW() - INTERVAL '2 days', NOW(), 0),
+(5005, '晚安月亮', '月亮晚安', '睡前绘本', 1004, 'AGE_0_2', 'https://picsum.photos/seed/book5/400/300', '温馨的睡前故事，和月亮说晚安，和星星说晚安。', 7, TRUE, FALSE, NULL, 789, 5.0, 123, 345, 80, NOW() - INTERVAL '1 day', NOW(), 0)
+ON CONFLICT (id) DO NOTHING;
+
+-- 三期：插入演示绘本页面数据（小兔子找萝卜）
+INSERT INTO picture_book_page (id, book_id, page_number, image_url, text_content, audio_url, duration_sec, created_at, updated_at, deleted) VALUES
+(6001, 5001, 1, 'https://picsum.photos/seed/book1p1/800/600', '小兔子肚子饿了，它想吃萝卜。', NULL, NULL, NOW(), NOW(), 0),
+(6002, 5001, 2, 'https://picsum.photos/seed/book1p2/800/600', '小兔子出门了，它看到了小鸟。小鸟说：你好呀！', NULL, NULL, NOW(), NOW(), 0),
+(6003, 5001, 3, 'https://picsum.photos/seed/book1p3/800/600', '小兔子继续走，它看到了小松鼠。小松鼠在树上吃松果。', NULL, NULL, NOW(), NOW(), 0),
+(6004, 5001, 4, 'https://picsum.photos/seed/book1p4/800/600', '小兔子走到菜园，终于找到了大萝卜！', NULL, NULL, NOW(), NOW(), 0),
+(6005, 5001, 5, 'https://picsum.photos/seed/book1p5/800/600', '小兔子开心地吃着萝卜，真好吃呀！', NULL, NULL, NOW(), NOW(), 0)
+ON CONFLICT (id) DO NOTHING;
+
+-- 三期：插入演示绘本页面数据（小猪佩奇的一天）
+INSERT INTO picture_book_page (id, book_id, page_number, image_url, text_content, audio_url, duration_sec, created_at, updated_at, deleted) VALUES
+(6006, 5002, 1, 'https://picsum.photos/seed/book2p1/800/600', '早上，太阳升起来了。佩奇醒来了。', NULL, NULL, NOW(), NOW(), 0),
+(6007, 5002, 2, 'https://picsum.photos/seed/book2p2/800/600', '佩奇刷牙洗脸，准备吃早餐。', NULL, NULL, NOW(), NOW(), 0),
+(6008, 5002, 3, 'https://picsum.photos/seed/book2p3/800/600', '吃完早餐，佩奇和乔治一起玩玩具。', NULL, NULL, NOW(), NOW(), 0),
+(6009, 5002, 4, 'https://picsum.photos/seed/book2p4/800/600', '中午，佩奇一家人一起吃午饭。', NULL, NULL, NOW(), NOW(), 0),
+(6010, 5002, 5, 'https://picsum.photos/seed/book2p5/800/600', '下午，佩奇去公园玩滑梯。', NULL, NULL, NOW(), NOW(), 0),
+(6011, 5002, 6, 'https://picsum.photos/seed/book2p6/800/600', '傍晚，佩奇回家吃晚饭。', NULL, NULL, NOW(), NOW(), 0),
+(6012, 5002, 7, 'https://picsum.photos/seed/book2p7/800/600', '晚上，佩奇洗澡，准备睡觉。', NULL, NULL, NOW(), NOW(), 0),
+(6013, 5002, 8, 'https://picsum.photos/seed/book2p8/800/600', '佩奇躺在床上，说：晚安！', NULL, NULL, NOW(), NOW(), 0)
+ON CONFLICT (id) DO NOTHING;
