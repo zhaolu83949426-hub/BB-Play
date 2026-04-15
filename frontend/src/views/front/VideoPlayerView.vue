@@ -87,4 +87,15 @@ async function submitRate() {
 .rate-wrap {
   padding: 16px;
 }
+
+/* 平板适配 */
+@media (min-width: 768px) {
+  .video {
+    border-radius: 16px;
+  }
+
+  .rate-wrap {
+    padding: 24px;
+  }
+}
 </style>

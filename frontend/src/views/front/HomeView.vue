@@ -249,7 +249,12 @@ function onHiddenTap() {
   }
   if (hiddenTapCount >= 5) {
     hiddenTapCount = 0;
-    router.push('/admin/media');
+    const role = localStorage.getItem('role');
+    if (role === 'ADMIN') {
+      router.push('/admin/media');
+    } else {
+      router.push('/login');
+    }
     return;
   }
   hiddenTimer = window.setTimeout(() => {
@@ -322,6 +327,23 @@ async function submitAudioRate() {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* 平板适配 */
+@media (min-width: 768px) {
+  .media-row {
+    grid-template-columns: 140px 1fr auto;
+    gap: 16px;
+  }
+
+  .cover {
+    width: 140px;
+    height: 105px;
+  }
+
+  .name {
+    font-size: 18px;
+  }
+}
+
 .meta {
   min-width: 0;
 }
@@ -357,7 +379,7 @@ async function submitAudioRate() {
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 24px);
-  max-width: 406px;
+  max-width: var(--page-max-width);
   bottom: 10px;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

@@ -9,6 +9,7 @@
         <van-button round size="small" @click="router.push('/')">返回前台</van-button>
         <van-button round size="small" @click="router.push('/admin/series')">系列字典</van-button>
         <van-button type="primary" round size="small" @click="router.push('/admin/media/new')">新增资源</van-button>
+        <van-button plain round size="small" @click="handleLogout">退出登录</van-button>
       </div>
     </div>
 
@@ -125,6 +126,14 @@ async function onToggleAbnormal(item: MediaItem) {
   showSuccessToast('状态已更新');
   fetchList(false);
 }
+
+function handleLogout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  localStorage.removeItem('role');
+  showSuccessToast('已退出登录');
+  router.push('/login');
+}
 </script>
 
 <style scoped>
@@ -171,5 +180,20 @@ async function onToggleAbnormal(item: MediaItem) {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+/* 平板适配 */
+@media (min-width: 768px) {
+  .item {
+    padding: 16px;
+  }
+
+  .name {
+    font-size: 18px;
+  }
+
+  .ops {
+    gap: 8px;
+  }
 }
 </style>

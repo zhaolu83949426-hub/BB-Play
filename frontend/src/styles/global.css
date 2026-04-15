@@ -4,6 +4,7 @@
   --primary: #4b8bff;
   --text-main: #1d2b4f;
   --text-sub: #5f7297;
+  --page-max-width: 430px;
 }
 
 body {
@@ -18,7 +19,7 @@ body {
 }
 
 .page {
-  max-width: 430px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
   min-height: 100vh;
   padding: 12px;
@@ -41,3 +42,42 @@ body {
   font-size: 12px;
   color: var(--text-sub);
 }
+
+/* 平板适配 (768px - 1024px) */
+@media (min-width: 768px) {
+  :root {
+    --page-max-width: 720px;
+  }
+
+  .page {
+    padding: 20px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .sub {
+    font-size: 14px;
+  }
+}
+
+/* 大屏平板和桌面 (1024px+) */
+@media (min-width: 1024px) {
+  :root {
+    --page-max-width: 960px;
+  }
+
+  .page {
+    padding: 24px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+}
+
