@@ -62,9 +62,12 @@
       <van-slider v-model="progress" @change="onSeek" class="audio-progress" />
     </div>
 
-    <van-popup v-model:show="showDrawer" position="bottom" round :style="{ height: '42%' }">
+    <van-popup v-model:show="showDrawer" position="bottom" round :style="{ height: '50%' }">
       <div class="drawer">
-        <div class="title">{{ currentAudio ? displayName(currentAudio.title, currentAudio.nickname) : '' }}</div>
+        <div class="drawer-header">
+          <div class="title">{{ currentAudio ? displayName(currentAudio.title, currentAudio.nickname) : '' }}</div>
+          <van-button icon="bars" size="small" plain @click="showPlaylist = true">列表</van-button>
+        </div>
         <audio
           ref="audioRef"
           :src="currentAudio?.playUrl"
@@ -74,9 +77,40 @@
         />
         <div class="sub">{{ currentTimeText }} / {{ totalTimeText }}</div>
         <van-slider v-model="progress" @change="onSeek" />
-        <div class="btn-row">
+        <div class="control-row">
+          <van-button icon="replay" size="small" @click="cyclePlayMode" class="mode-btn">
+            {{ playModeText }}
+          </van-button>
+          <van-button icon="arrow-left" size="small" @click="playPrevious" :disabled="!canPlayPrevious" />
           <van-button type="primary" round @click="togglePlay">{{ isPlaying ? '暂停' : '播放' }}</van-button>
+          <van-button icon="arrow" size="small" @click="playNext" :disabled="!canPlayNext" />
           <van-button round @click="showDrawer = false">收起</van-button>
+        </div>
+        <div class="playlist-info">{{ playlistInfo }}</div>
+      </div>
+    </van-popup>
+
+    <van-popup v-model:show="showPlaylist" position="right" :style="{ width: '80%', height: '100%' }">
+      <div class="playlist-panel">
+        <div class="playlist-header">
+          <div class="title">播放列表 ({{ playlist.length }})</div>
+          <van-button icon="cross" size="small" plain @click="showPlaylist = false" />
+        </div>
+        <div class="playlist-content">
+          <div
+            v-for="(item, index) in playlist"
+            :key="item.resourceId"
+            class="playlist-item"
+            :class="{ active: index === currentIndex }"
+            @click="playAtIndex(index)"
+          >
+            <div class="item-index">{{ index + 1 }}</div>
+            <div class="item-info">
+              <div class="item-title">{{ displayName(item.title, item.nickname) }}</div>
+              <div class="item-series">{{ item.seriesName || '-' }}</div>
+            </div>
+            <van-icon v-if="index === currentIndex && isPlaying" name="play-circle" color="#1989fa" />
+          </div>
         </div>
       </div>
     </van-popup>
@@ -92,12 +126,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { getMediaList, postMediaClick, postMediaRate } from '../../api/media';
 import { getSeriesOptions } from '../../api/series';
-import type { MediaItem, SeriesOption } from '../../types/media';
+import { saveAudioPlayerState, getAudioPlayerState } from '../../api/audioPlayer';
+import { recordPlay } from '../../api/recentPlay';
+import type { MediaItem } from '../../types/media';
+import { PlayMode, type AudioPlaylistItem } from '../../types/media';
 import { ageLabel, displayName } from '../../utils/format';
 
 const defaultCover = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22160%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23dce8fb%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%235f7297%22 font-size=%2214%22%3E封面%3C/text%3E%3C/svg%3E';
@@ -116,6 +153,7 @@ const tabIndex = ref(0);
 const currentAudio = ref<MediaItem | null>(null);
 const audioRef = ref<HTMLAudioElement>();
 const showDrawer = ref(false);
+const showPlaylist = ref(false);
 const isPlaying = ref(false);
 const progress = ref(0);
 const showAudioRate = ref(false);
@@ -123,9 +161,47 @@ const audioRateScore = ref(5);
 let hiddenTapCount = 0;
 let hiddenTimer: number | undefined;
 
+// 播放列表相关状态
+const playlist = ref<AudioPlaylistItem[]>([]);
+const currentIndex = ref(0);
+const playMode = ref<PlayMode>(PlayMode.LIST_LOOP);
+const shuffleBag = ref<number[]>([]);
+let saveStateTimer: number | undefined;
+
 const activeMediaType = computed(() => (tabIndex.value === 0 ? 'AUDIO' : 'VIDEO'));
 const currentTimeText = computed(() => formatSeconds((audioRef.value?.currentTime || 0)));
 const totalTimeText = computed(() => formatSeconds((audioRef.value?.duration || 0)));
+
+const playModeText = computed(() => {
+  switch (playMode.value) {
+    case PlayMode.SINGLE_LOOP:
+      return '单曲';
+    case PlayMode.LIST_LOOP:
+      return '列表';
+    case PlayMode.LIST_SHUFFLE:
+      return '随机';
+    default:
+      return '列表';
+  }
+});
+
+const playlistInfo = computed(() => {
+  if (playlist.value.length === 0) return '';
+  return `${currentIndex.value + 1} / ${playlist.value.length}`;
+});
+
+const canPlayPrevious = computed(() => {
+  if (playlist.value.length <= 1) return false;
+  if (playMode.value === PlayMode.LIST_LOOP) return true;
+  return currentIndex.value > 0;
+});
+
+const canPlayNext = computed(() => {
+  if (playlist.value.length <= 1) return false;
+  if (playMode.value === PlayMode.LIST_LOOP) return true;
+  if (playMode.value === PlayMode.LIST_SHUFFLE) return shuffleBag.value.length > 0;
+  return currentIndex.value < playlist.value.length - 1;
+});
 
 const ageOptions = [
   { text: '年龄: 全部', value: '' },
@@ -145,6 +221,14 @@ watch([ageRange, seriesId, sortBy], () => fetchList(true));
 onMounted(async () => {
   await loadSeries();
   await fetchList(true);
+  await restorePlayerState();
+});
+
+onBeforeUnmount(() => {
+  savePlayerState();
+  if (saveStateTimer) {
+    window.clearTimeout(saveStateTimer);
+  }
 });
 
 async function loadSeries() {
@@ -153,13 +237,9 @@ async function loadSeries() {
 }
 
 async function fetchList(reset: boolean) {
-  if (loading.value) {
-    return;
-  }
+  if (loading.value) return;
   loading.value = true;
-  if (reset) {
-    page.value = 1;
-  }
+  if (reset) page.value = 1;
   const params = {
     keyword: keyword.value || undefined,
     mediaType: activeMediaType.value,
@@ -190,9 +270,7 @@ function onTabChange(index: number) {
 }
 
 function loadMore() {
-  if (finished.value) {
-    return;
-  }
+  if (finished.value) return;
   page.value += 1;
   fetchList(false);
 }
@@ -204,26 +282,47 @@ async function onPlay(item: MediaItem) {
     await router.push(`/video/${item.id}`);
     return;
   }
+  
+  // 构建播放列表
+  const audioList = list.value.filter(it => it.mediaType === 'AUDIO');
+  playlist.value = audioList.map(it => ({
+    resourceId: it.id,
+    title: it.title,
+    nickname: it.nickname,
+    coverUrl: it.coverUrl,
+    playUrl: it.playUrl,
+    seriesName: it.series
+  }));
+  
+  currentIndex.value = audioList.findIndex(it => it.id === item.id);
+  if (currentIndex.value === -1) currentIndex.value = 0;
+  
   currentAudio.value = item;
-  await nextTick();
-  if (!audioRef.value) {
-    return;
+  
+  // 如果是随机模式，重新生成随机袋
+  if (playMode.value === PlayMode.LIST_SHUFFLE) {
+    generateShuffleBag();
   }
+  
+  await nextTick();
+  if (!audioRef.value) return;
   await audioRef.value.play();
   isPlaying.value = true;
+  
+  // 保存播放器状态
+  debounceSaveState();
 }
 
 async function togglePlay() {
-  if (!audioRef.value) {
-    return;
-  }
+  if (!audioRef.value) return;
   if (audioRef.value.paused) {
     await audioRef.value.play();
     isPlaying.value = true;
-    return;
+  } else {
+    audioRef.value.pause();
+    isPlaying.value = false;
   }
-  audioRef.value.pause();
-  isPlaying.value = false;
+  debounceSaveState();
 }
 
 function onTimeUpdate() {
@@ -232,18 +331,189 @@ function onTimeUpdate() {
     return;
   }
   progress.value = Math.floor((audioRef.value.currentTime / audioRef.value.duration) * 100);
+  
+  // 每10秒保存一次状态
+  if (Math.floor(audioRef.value.currentTime) % 10 === 0) {
+    debounceSaveState();
+  }
 }
 
 function onSeek(value: number) {
-  if (!audioRef.value || !audioRef.value.duration) {
-    return;
-  }
+  if (!audioRef.value || !audioRef.value.duration) return;
   audioRef.value.currentTime = (value / 100) * audioRef.value.duration;
+  debounceSaveState();
 }
 
-function onEnded() {
+async function onEnded() {
   isPlaying.value = false;
-  showAudioRate.value = true;
+  
+  // 记录最近播放
+  if (currentAudio.value && audioRef.value) {
+    await recordPlay({
+      resourceId: currentAudio.value.id,
+      durationSec: Math.floor(audioRef.value.duration || 0),
+      positionSec: Math.floor(audioRef.value.duration || 0)
+    });
+  }
+  
+  // 根据播放模式决定下一步
+  if (playMode.value === PlayMode.SINGLE_LOOP) {
+    // 单曲循环：重新播放当前曲目
+    if (audioRef.value) {
+      audioRef.value.currentTime = 0;
+      await audioRef.value.play();
+      isPlaying.value = true;
+    }
+  } else if (canPlayNext.value) {
+    // 列表循环或随机播放：播放下一首
+    await playNext();
+  } else {
+    // 播放结束，显示评分
+    showAudioRate.value = true;
+  }
+}
+
+function cyclePlayMode() {
+  const modes = [PlayMode.LIST_LOOP, PlayMode.SINGLE_LOOP, PlayMode.LIST_SHUFFLE];
+  const currentModeIndex = modes.indexOf(playMode.value);
+  playMode.value = modes[(currentModeIndex + 1) % modes.length];
+  
+  // 切换到随机模式时生成随机袋
+  if (playMode.value === PlayMode.LIST_SHUFFLE) {
+    generateShuffleBag();
+  }
+  
+  showSuccessToast(`切换到${playModeText.value}循环`);
+  debounceSaveState();
+}
+
+async function playPrevious() {
+  if (!canPlayPrevious.value || playlist.value.length === 0) return;
+  
+  let nextIndex: number;
+  if (playMode.value === PlayMode.LIST_LOOP) {
+    nextIndex = currentIndex.value - 1;
+    if (nextIndex < 0) nextIndex = playlist.value.length - 1;
+  } else {
+    nextIndex = currentIndex.value - 1;
+  }
+  
+  await playAtIndex(nextIndex);
+}
+
+async function playNext() {
+  if (!canPlayNext.value || playlist.value.length === 0) return;
+  
+  let nextIndex: number;
+  if (playMode.value === PlayMode.SINGLE_LOOP) {
+    // 单曲循环模式下，下一首按列表顺序
+    nextIndex = currentIndex.value + 1;
+    if (nextIndex >= playlist.value.length) nextIndex = 0;
+  } else if (playMode.value === PlayMode.LIST_SHUFFLE) {
+    // 随机模式：从随机袋中取下一首
+    if (shuffleBag.value.length === 0) {
+      generateShuffleBag();
+    }
+    nextIndex = shuffleBag.value.shift()!;
+  } else {
+    // 列表循环
+    nextIndex = currentIndex.value + 1;
+    if (nextIndex >= playlist.value.length) nextIndex = 0;
+  }
+  
+  await playAtIndex(nextIndex);
+}
+
+async function playAtIndex(index: number) {
+  if (index < 0 || index >= playlist.value.length) return;
+  
+  currentIndex.value = index;
+  const item = playlist.value[index];
+  
+  // 查找对应的 MediaItem
+  const mediaItem = list.value.find(it => it.id === item.resourceId);
+  if (!mediaItem) return;
+  
+  currentAudio.value = mediaItem;
+  await postMediaClick(item.resourceId);
+  
+  await nextTick();
+  if (!audioRef.value) return;
+  await audioRef.value.play();
+  isPlaying.value = true;
+  
+  debounceSaveState();
+}
+
+function generateShuffleBag() {
+  // 生成不包含当前索引的随机序列
+  const indices = Array.from({ length: playlist.value.length }, (_, i) => i)
+    .filter(i => i !== currentIndex.value);
+  
+  // Fisher-Yates 洗牌算法
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  
+  shuffleBag.value = indices;
+}
+
+function debounceSaveState() {
+  if (saveStateTimer) {
+    window.clearTimeout(saveStateTimer);
+  }
+  saveStateTimer = window.setTimeout(() => {
+    savePlayerState();
+  }, 1000);
+}
+
+async function savePlayerState() {
+  if (playlist.value.length === 0 || !currentAudio.value || !audioRef.value) return;
+  
+  try {
+    await saveAudioPlayerState({
+      playlist: playlist.value,
+      currentIndex: currentIndex.value,
+      currentResourceId: currentAudio.value.id,
+      playMode: playMode.value,
+      currentTimeSec: Math.floor(audioRef.value.currentTime || 0),
+      durationSec: Math.floor(audioRef.value.duration || 0),
+      shuffleBag: shuffleBag.value
+    });
+  } catch (error) {
+    console.error('保存播放器状态失败', error);
+  }
+}
+
+async function restorePlayerState() {
+  try {
+    const state = await getAudioPlayerState();
+    if (!state || !state.playlist || state.playlist.length === 0) return;
+    
+    playlist.value = state.playlist;
+    currentIndex.value = state.currentIndex;
+    playMode.value = state.playMode;
+    shuffleBag.value = state.shuffleBag || [];
+    
+    // 查找对应的 MediaItem
+    const mediaItem = list.value.find(it => it.id === state.currentResourceId);
+    if (!mediaItem) return;
+    
+    currentAudio.value = mediaItem;
+    
+    await nextTick();
+    if (!audioRef.value) return;
+    
+    // 恢复播放进度
+    if (state.currentTimeSec && state.durationSec) {
+      audioRef.value.currentTime = state.currentTimeSec;
+    }
+    
+    // 不自动播放，等待用户操作
+  } catch (error) {
+    console.error('恢复播放器状态失败', error);
+  }
 }
 
 function onHiddenTap() {
@@ -283,9 +553,7 @@ function formatSeconds(value: number) {
 }
 
 async function submitAudioRate() {
-  if (!currentAudio.value) {
-    return;
-  }
+  if (!currentAudio.value) return;
   await postMediaRate(currentAudio.value.id, audioRateScore.value);
   showAudioRate.value = false;
   showSuccessToast('评分成功');
@@ -331,7 +599,6 @@ async function submitAudioRate() {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* 平板适配 */
 @media (min-width: 768px) {
   .media-row {
     grid-template-columns: 140px 1fr auto;
@@ -429,10 +696,93 @@ async function submitAudioRate() {
   padding: 16px;
 }
 
-.btn-row {
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.control-row {
   display: flex;
   gap: 8px;
   margin-top: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mode-btn {
+  min-width: 60px;
+}
+
+.playlist-info {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 8px;
+}
+
+.playlist-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.playlist-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.playlist-item:active {
+  background-color: #f5f5f5;
+}
+
+.playlist-item.active {
+  background-color: #e8f4ff;
+}
+
+.item-index {
+  font-size: 14px;
+  color: var(--text-sub);
+  min-width: 24px;
+  text-align: center;
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-series {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 2px;
 }
 
 .rate-wrap {

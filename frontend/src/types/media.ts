@@ -58,3 +58,41 @@ export interface MediaSavePayload {
   sourceRemark?: string;
   sortWeight: number;
 }
+
+/**
+ * 播放模式枚举
+ */
+export enum PlayMode {
+  /** 单曲循环 */
+  SINGLE_LOOP = 'SINGLE_LOOP',
+  /** 列表循环 */
+  LIST_LOOP = 'LIST_LOOP',
+  /** 随机播放 */
+  LIST_SHUFFLE = 'LIST_SHUFFLE'
+}
+
+/**
+ * 音频播放列表项
+ */
+export interface AudioPlaylistItem {
+  resourceId: number;
+  title: string;
+  nickname?: string;
+  coverUrl: string;
+  playUrl: string;
+  seriesName?: string;
+}
+
+/**
+ * 音频播放器状态
+ */
+export interface AudioPlayerState {
+  playlist: AudioPlaylistItem[];
+  currentIndex: number;
+  currentResourceId: number;
+  playMode: PlayMode;
+  currentTimeSec: number;
+  durationSec: number;
+  shuffleBag: number[];
+  updatedAt: string;
+}
