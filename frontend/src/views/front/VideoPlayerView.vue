@@ -20,6 +20,9 @@
       <div class="title">{{ displayName(detail.title, detail.nickname) }}</div>
       <div class="sub">{{ detail.series }} | {{ ageLabel(detail.ageRange) }} | 播放 {{ detail.clickCount }}</div>
       <div class="sub">{{ detail.description || '暂无简介' }}</div>
+      <div class="action-bar">
+        <FavoriteButton :resource-id="detail.id" />
+      </div>
     </div>
 
     <van-popup v-model:show="showRate" round position="bottom">
@@ -33,12 +36,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showSuccessToast } from 'vant';
 import { getMediaDetail, postMediaRate } from '../../api/media';
 import type { MediaItem } from '../../types/media';
 import { ageLabel, displayName } from '../../utils/format';
+import FavoriteButton from '../../components/FavoriteButton.vue';
+import { recordPlay } from '../../api/recentPlay';
 
 const route = useRoute();
 const router = useRouter();
@@ -46,11 +51,71 @@ const videoRef = ref<HTMLVideoElement>();
 const detail = ref<MediaItem>();
 const showRate = ref(false);
 const rateScore = ref(5);
+let playTimer: number | null = null;
+let hasRecorded = false;
 
 onMounted(async () => {
   const id = Number(route.params.id);
   detail.value = await getMediaDetail(id);
+  
+  // 监听播放事件
+  if (videoRef.value) {
+    videoRef.value.addEventListener('play', handlePlay);
+    videoRef.value.addEventListener('pause', handlePause);
+    videoRef.value.addEventListener('ended', handleEnded);
+  }
 });
+
+onUnmounted(() => {
+  if (playTimer) {
+    clearTimeout(playTimer);
+  }
+  if (videoRef.value) {
+    videoRef.value.removeEventListener('play', handlePlay);
+    videoRef.value.removeEventListener('pause', handlePause);
+    videoRef.value.removeEventListener('ended', handleEnded);
+  }
+});
+
+// 播放开始：10秒后记录
+function handlePlay() {
+  if (hasRecorded) return;
+  
+  playTimer = window.setTimeout(() => {
+    recordPlayHistory();
+    hasRecorded = true;
+  }, 10000);
+}
+
+// 暂停：记录播放进度
+function handlePause() {
+  if (playTimer) {
+    clearTimeout(playTimer);
+    playTimer = null;
+  }
+  recordPlayHistory();
+}
+
+// 播放结束：记录并显示评分
+function handleEnded() {
+  recordPlayHistory();
+  showRate.value = true;
+}
+
+// 记录播放历史
+async function recordPlayHistory() {
+  if (!detail.value || !videoRef.value) return;
+  
+  try {
+    await recordPlay({
+      resourceId: detail.value.id,
+      durationSec: Math.floor(videoRef.value.duration || 0),
+      positionSec: Math.floor(videoRef.value.currentTime || 0)
+    });
+  } catch (error) {
+    console.error('记录播放历史失败', error);
+  }
+}
 
 async function submitRate() {
   if (!detail.value) {
@@ -82,6 +147,12 @@ async function submitRate() {
   width: 100%;
   border-radius: 12px;
   margin-bottom: 10px;
+}
+
+.action-bar {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
 }
 
 .rate-wrap {

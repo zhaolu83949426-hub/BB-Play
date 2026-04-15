@@ -30,6 +30,11 @@ CREATE TABLE IF NOT EXISTS media_resource (
     rating_avg NUMERIC(4, 2) NOT NULL DEFAULT 0,
     rating_count INTEGER NOT NULL DEFAULT 0,
     sort_weight INTEGER NOT NULL DEFAULT 0,
+    last_test_status VARCHAR(20),
+    last_test_code INTEGER,
+    last_test_latency_ms INTEGER,
+    last_test_error VARCHAR(500),
+    last_test_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted SMALLINT NOT NULL DEFAULT 0

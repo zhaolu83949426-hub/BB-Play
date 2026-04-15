@@ -3,6 +3,8 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('../views/front/HomeView.vue') },
   { path: '/video/:id', component: () => import('../views/front/VideoPlayerView.vue') },
+  { path: '/favorites', component: () => import('../views/front/FavoriteListView.vue') },
+  { path: '/recent-play', component: () => import('../views/front/RecentPlayListView.vue') },
   { path: '/login', component: () => import('../views/auth/LoginView.vue') },
   { path: '/register', component: () => import('../views/auth/RegisterView.vue') },
   { 

@@ -1,19 +1,60 @@
 <template>
   <div class="page auth-page">
+    <!-- 可爱的背景装饰 -->
+    <div class="bg-decoration">
+      <div class="cloud cloud-1"></div>
+      <div class="cloud cloud-2"></div>
+      <div class="cloud cloud-3"></div>
+      <div class="star star-1">⭐</div>
+      <div class="star star-2">✨</div>
+      <div class="star star-3">🌟</div>
+    </div>
+
     <div class="card auth-card">
-      <div class="title">注册账号</div>
-      <div class="sub">注册后可登录使用</div>
+      <!-- 可爱的顶部插图 -->
+      <div class="illustration">
+        <img src="https://illustrations.popsy.co/amber/man-riding-a-rocket.svg" alt="火箭起飞" class="main-img" />
+      </div>
+
+      <div class="title">🎉 注册新账号</div>
+      <div class="sub">✨ 加入我们，开启精彩旅程 ✨</div>
 
       <div class="form-wrap">
-        <van-field v-model="form.username" label="账号" placeholder="3-50个字符" maxlength="50" />
-        <van-field v-model="form.password" type="password" label="密码" placeholder="6-50个字符" maxlength="50" />
-        <van-field v-model="form.confirmPassword" type="password" label="确认密码" placeholder="再次输入密码" maxlength="50" />
+        <van-field 
+          v-model="form.username" 
+          label="👤 账号" 
+          placeholder="3-50个字符" 
+          maxlength="50"
+          class="cute-field"
+        />
+        <van-field 
+          v-model="form.password" 
+          type="password" 
+          label="🔒 密码" 
+          placeholder="6-50个字符" 
+          maxlength="50"
+          class="cute-field"
+        />
+        <van-field 
+          v-model="form.confirmPassword" 
+          type="password" 
+          label="🔐 确认密码" 
+          placeholder="再次输入密码" 
+          maxlength="50"
+          class="cute-field"
+        />
       </div>
 
       <div class="btn-group">
-        <van-button type="primary" block round @click="handleRegister" :loading="loading">注册</van-button>
-        <van-button block round @click="router.push('/login')">已有账号，去登录</van-button>
-        <van-button block plain round @click="router.push('/')">返回首页</van-button>
+        <van-button type="primary" block round @click="handleRegister" :loading="loading" class="cute-btn primary-btn">
+          🚀 立即注册
+        </van-button>
+        <van-button block round @click="router.push('/login')" class="cute-btn secondary-btn">
+          🔑 已有账号，去登录
+        </van-button>
+        <van-button block plain round @click="router.push('/')" class="cute-btn plain-btn">
+          🏠 返回首页
+        </van-button>
       </div>
     </div>
   </div>
@@ -75,40 +116,276 @@ async function handleRegister() {
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 可爱的背景装饰 */
+.bg-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 100px;
+  animation: float 20s infinite ease-in-out;
+}
+
+.cloud::before,
+.cloud::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 100px;
+}
+
+.cloud-1 {
+  width: 100px;
+  height: 40px;
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.cloud-1::before {
+  width: 50px;
+  height: 50px;
+  top: -25px;
+  left: 10px;
+}
+
+.cloud-1::after {
+  width: 60px;
+  height: 40px;
+  top: -15px;
+  right: 10px;
+}
+
+.cloud-2 {
+  width: 120px;
+  height: 50px;
+  top: 60%;
+  right: 15%;
+  animation-delay: -7s;
+}
+
+.cloud-2::before {
+  width: 60px;
+  height: 60px;
+  top: -30px;
+  left: 15px;
+}
+
+.cloud-2::after {
+  width: 70px;
+  height: 50px;
+  top: -20px;
+  right: 15px;
+}
+
+.cloud-3 {
+  width: 80px;
+  height: 35px;
+  bottom: 20%;
+  left: 20%;
+  animation-delay: -14s;
+}
+
+.cloud-3::before {
+  width: 40px;
+  height: 40px;
+  top: -20px;
+  left: 10px;
+}
+
+.cloud-3::after {
+  width: 50px;
+  height: 35px;
+  top: -15px;
+  right: 10px;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+  }
+  50% {
+    transform: translateY(0) translateX(20px);
+  }
+  75% {
+    transform: translateY(20px) translateX(10px);
+  }
+}
+
+.star {
+  position: absolute;
+  font-size: 24px;
+  animation: twinkle 3s infinite ease-in-out;
+}
+
+.star-1 {
+  top: 15%;
+  right: 20%;
+  animation-delay: 0s;
+}
+
+.star-2 {
+  top: 70%;
+  right: 10%;
+  animation-delay: 1s;
+}
+
+.star-3 {
+  bottom: 25%;
+  left: 15%;
+  animation-delay: 2s;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
 }
 
 .auth-card {
   width: 100%;
   max-width: 400px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 30px;
+  padding: 40px 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(10px);
 }
 
 /* 平板适配 */
 @media (min-width: 768px) {
   .auth-card {
     max-width: 480px;
+    padding: 50px 40px;
+  }
+}
+
+.illustration {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.main-img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  animation: bounce 2s infinite ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 
 .title {
   text-align: center;
   margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #f5576c;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sub {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
+  font-size: 14px;
+  color: #f093fb;
 }
 
 .form-wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cute-field {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(240, 147, 251, 0.1);
+}
+
+.cute-field :deep(.van-field__label) {
+  font-weight: 600;
+  color: #f5576c;
+}
+
+.cute-field :deep(.van-field__control) {
+  font-size: 15px;
 }
 
 .btn-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+
+.cute-btn {
+  font-weight: 600;
+  font-size: 16px;
+  height: 48px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.cute-btn:active {
+  transform: scale(0.98);
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: none;
+}
+
+.primary-btn:hover {
+  box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
+}
+
+.secondary-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+.secondary-btn:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.plain-btn {
+  background: white;
+  border: 2px solid #f5576c;
+  color: #f5576c;
+}
+
+.plain-btn:hover {
+  background: rgba(245, 87, 108, 0.1);
 }
 </style>

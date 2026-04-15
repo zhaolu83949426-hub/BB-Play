@@ -2,11 +2,13 @@ package com.bbplay.app.controller.admin;
 
 import com.bbplay.app.common.ApiResponse;
 import com.bbplay.app.common.PageResult;
+import com.bbplay.app.dto.LinkTestResult;
 import com.bbplay.app.dto.media.AdminMediaListQuery;
 import com.bbplay.app.dto.media.MediaAbnormalRequest;
 import com.bbplay.app.dto.media.MediaPublishRequest;
 import com.bbplay.app.dto.media.MediaSaveRequest;
 import com.bbplay.app.service.MediaService;
+import com.bbplay.app.service.ResourceLinkTestService;
 import com.bbplay.app.vo.MediaAdminItemVO;
 import com.bbplay.app.vo.MediaDetailVO;
 import jakarta.validation.Valid;
@@ -34,6 +36,7 @@ import java.util.Map;
 public class AdminMediaController {
 
     private final MediaService mediaService;
+    private final ResourceLinkTestService resourceLinkTestService;
 
     /**
      * 管理端资源分页查询。
@@ -82,8 +85,17 @@ public class AdminMediaController {
      * 异常标记切换。
      */
     @PatchMapping("/{id}/abnormal")
-    public ApiResponse<Void> abnormal(@PathVariable Long id, @Valid @RequestBody MediaAbnormalRequest request) {
+    public ApiResponse<Void> updateAbnormal(@PathVariable Long id, @Valid @RequestBody MediaAbnormalRequest request) {
         mediaService.updateAbnormal(id, request.getAbnormal(), request.getAbnormalRemark());
         return ApiResponse.success();
+    }
+
+    /**
+     * 测试资源链接
+     */
+    @PostMapping("/{id}/test-link")
+    public ApiResponse<LinkTestResult> testLink(@PathVariable Long id) {
+        LinkTestResult result = resourceLinkTestService.testLink(id);
+        return ApiResponse.success(result);
     }
 }

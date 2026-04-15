@@ -47,6 +47,9 @@ const http = {
   get<T>(url: string, config?: AxiosRequestConfig) {
     return unwrap<T>(client.get(url, config));
   },
+  delete<T>(url: string, config?: AxiosRequestConfig) {
+    return unwrap<T>(client.delete(url, config));
+  },
   post<T>(url: string, data?: unknown, config?: AxiosRequestConfig) {
     return unwrap<T>(client.post(url, data, config));
   },

@@ -40,3 +40,15 @@ export function updatePublish(id: number, published: boolean) {
 export function updateAbnormal(id: number, abnormal: boolean, abnormalRemark?: string) {
   return http.patch<void>(`/admin/media/${id}/abnormal`, { abnormal, abnormalRemark });
 }
+
+export interface LinkTestResult {
+  status: string
+  statusCode: number
+  latencyMs: number
+  checkedAt: string
+  errorMessage?: string
+}
+
+export function testMediaLink(id: number) {
+  return http.post<LinkTestResult>(`/admin/media/${id}/test-link`)
+}

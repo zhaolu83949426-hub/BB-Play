@@ -38,6 +38,11 @@ public class MediaResource {
     private BigDecimal ratingAvg;
     private Integer ratingCount;
     private Integer sortWeight;
+    private String lastTestStatus;
+    private Integer lastTestCode;
+    private Integer lastTestLatencyMs;
+    private String lastTestError;
+    private LocalDateTime lastTestAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

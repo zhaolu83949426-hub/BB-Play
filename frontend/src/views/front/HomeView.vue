@@ -3,6 +3,10 @@
     <div class="card">
       <div class="title">低龄宝宝视听绘本</div>
       <div class="sub">0-6岁启蒙内容 · 一点即播</div>
+      <div class="quick-links">
+        <van-button size="small" round icon="star-o" @click="router.push('/favorites')">我的收藏</van-button>
+        <van-button size="small" round icon="clock-o" @click="router.push('/recent-play')">最近播放</van-button>
+      </div>
     </div>
 
     <div class="card section search-bar">
@@ -442,7 +446,12 @@ async function submitAudioRate() {
 }
 
 .rate-wrap .van-rate {
-  margin-bottom: 20px;
-  justify-content: center;
+  margin: 16px 0;
+}
+
+.quick-links {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
 }
 </style>
