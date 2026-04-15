@@ -1,0 +1,19 @@
+[Unit]
+Description=BB Play Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/bb-play/backend
+ExecStart=/usr/bin/java -jar /opt/bb-play/backend/bbpay-server.jar
+Restart=always
+RestartSec=5
+Environment=DB_HOST=127.0.0.1
+Environment=DB_PORT=5432
+Environment=DB_NAME=bb_play
+Environment=DB_USER=postgres
+Environment=DB_PASSWORD=postgres
+
+[Install]
+WantedBy=multi-user.target
