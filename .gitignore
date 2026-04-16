@@ -33,3 +33,6 @@ backend/target/
 # IDE
 .idea/
 .vscode/
+
+# bbplay-ui
+bbplay-ui/

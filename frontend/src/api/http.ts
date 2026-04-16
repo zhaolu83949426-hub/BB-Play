@@ -9,7 +9,7 @@ interface ApiResponse<T> {
 }
 
 const client = axios.create({
-  baseURL: '/api',
+  baseURL: '/bbplay-server',
   timeout: 10000
 });
 

@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_sys_user_username ON sys_user (username);
 
 -- 插入默认管理员账号 (密码: admin123)
 INSERT INTO sys_user (id, username, password, role, created_at, updated_at, deleted)
-VALUES (1, 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', 'ADMIN', NOW(), NOW(), 0)
+VALUES (1, 'admin', '$2a$10$5ozn8iCz9Bm83OjeEWiseOU94J3iW7yngy9yI0IXsi.F8VjHKud4K', 'ADMIN', NOW(), NOW(), 0)
 ON CONFLICT (username) DO NOTHING;
 
 -- 插入演示系列数据

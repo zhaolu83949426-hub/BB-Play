@@ -1,17 +1,14 @@
 <template>
   <div class="page">
-    <div class="card">
-      <div class="title">低龄宝宝视听绘本</div>
-      <div class="sub">0-6岁启蒙内容 · 一点即播</div>
-      <div class="quick-links">
-        <van-button size="small" round icon="star-o" @click="router.push('/favorites')">我的收藏</van-button>
-        <van-button size="small" round icon="clock-o" @click="router.push('/recent-play')">最近播放</van-button>
-      </div>
-    </div>
-
     <div class="card section search-bar">
-      <van-field v-model="keywordInput" placeholder="输入标题/昵称/别名/系列" maxlength="100" class="search-input" />
-      <van-button type="primary" round @click="onSearch" class="search-btn">搜索</van-button>
+      <van-field 
+        v-model="keywordInput" 
+        placeholder="找找你喜欢的故事吧~" 
+        maxlength="100" 
+        class="search-input"
+        left-icon="search"
+      />
+      <van-button type="primary" round @click="onSearch" class="search-btn" icon="search">搜索</van-button>
     </div>
 
     <div class="card section">
@@ -22,12 +19,17 @@
       </van-dropdown-menu>
     </div>
 
-    <div class="card section">
+    <div class="card section tabs-section">
       <van-tabs v-model:active="tabIndex" @change="onTabChange">
         <van-tab title="音频"></van-tab>
         <van-tab title="视频"></van-tab>
         <van-tab title="绘本"></van-tab>
       </van-tabs>
+      <div class="quick-actions">
+        <van-button size="small" plain round icon="star-o" @click="router.push('/favorites')" class="action-btn" />
+        <van-button size="small" plain round icon="clock-o" @click="router.push('/recent-play')" class="action-btn" />
+        <van-button size="small" plain round icon="user-o" @click="handleLogout" class="action-btn" />
+      </div>
     </div>
 
     <div class="section list-wrap">
@@ -35,7 +37,7 @@
       <template v-if="activeMediaType === 'PICTURE_BOOK'">
         <div class="book-grid">
           <PictureBookCard 
-            v-for="book in list" 
+            v-for="book in bookList" 
             :key="book.id" 
             :book="book"
             @click="onOpenBook(book)"
@@ -45,21 +47,32 @@
       
       <!-- 音频/视频列表布局 -->
       <template v-else>
-        <div v-for="item in list" :key="item.id" class="card media-row">
+        <div v-for="item in mediaList" :key="item.id" class="card media-row">
           <img :src="item.coverUrl || defaultCover" class="cover" @error="onCoverError" />
           <div class="meta">
             <div class="name">{{ displayName(item.title, item.nickname) }}</div>
             <div class="sub line">{{ item.alias || '-' }} | {{ item.series }} | {{ ageLabel(item.ageRange) }}</div>
             <div class="sub line">播放 {{ item.clickCount }} | {{ item.ratingAvg || 0 }}★</div>
           </div>
-          <van-button size="small" type="primary" round @click="onPlay(item)">
-            {{ activeMediaType === 'AUDIO' ? '播放' : '观看' }}
-          </van-button>
+          <div class="media-actions">
+            <van-button size="small" type="primary" round @click="onPlay(item)">
+              {{ activeMediaType === 'AUDIO' ? '播放' : '观看' }}
+            </van-button>
+            <van-button 
+              v-if="activeMediaType === 'AUDIO'" 
+              size="small" 
+              plain 
+              round 
+              icon="plus" 
+              @click.stop="addToPlaylist(item)"
+              class="add-btn"
+            />
+          </div>
         </div>
       </template>
       
-      <van-empty v-if="!list.length && !loading" description="暂无内容" />
-      <van-button v-if="!finished && list.length" block plain type="primary" :loading="loading" @click="loadMore">
+      <van-empty v-if="!displayCount && !loading" description="暂无内容" />
+      <van-button v-if="!finished && displayCount" block plain type="primary" :loading="loading" @click="loadMore">
         加载更多
       </van-button>
     </div>
@@ -74,9 +87,24 @@
           <div class="audio-title">{{ displayName(currentAudio.title, currentAudio.nickname) }}</div>
           <div class="audio-time">{{ currentTimeText }} / {{ totalTimeText }}</div>
         </div>
-        <van-button size="small" round type="primary" @click="showDrawer = true" class="audio-expand-btn">展开</van-button>
+        <van-button size="small" round type="primary" @click="showPlaylist = true" class="audio-expand-btn" icon="bars">列表</van-button>
       </div>
       <van-slider v-model="progress" @change="onSeek" class="audio-progress" />
+      <div class="audio-controls">
+        <van-button icon="replay" @click="cyclePlayMode" class="control-btn mode-btn">
+          <span class="mode-text">{{ playModeText }}</span>
+        </van-button>
+        <van-button icon="arrow-left" @click="playPrevious" :disabled="!canPlayPrevious" class="control-btn prev-btn" />
+        <van-button :icon="isPlaying ? 'pause' : 'play'" @click="togglePlay" class="control-btn-main play-btn" />
+        <van-button icon="arrow" @click="playNext" :disabled="!canPlayNext" class="control-btn next-btn" />
+      </div>
+      <audio
+        ref="audioRef"
+        :src="currentAudio?.playUrl"
+        @timeupdate="onTimeUpdate"
+        @loadedmetadata="onTimeUpdate"
+        @ended="onEnded"
+      />
     </div>
 
     <van-popup v-model:show="showDrawer" position="bottom" round :style="{ height: '50%' }">
@@ -85,13 +113,6 @@
           <div class="title">{{ currentAudio ? displayName(currentAudio.title, currentAudio.nickname) : '' }}</div>
           <van-button icon="bars" size="small" plain @click="showPlaylist = true">列表</van-button>
         </div>
-        <audio
-          ref="audioRef"
-          :src="currentAudio?.playUrl"
-          @timeupdate="onTimeUpdate"
-          @loadedmetadata="onTimeUpdate"
-          @ended="onEnded"
-        />
         <div class="sub">{{ currentTimeText }} / {{ totalTimeText }}</div>
         <van-slider v-model="progress" @change="onSeek" />
         <div class="control-row">
@@ -111,7 +132,10 @@
       <div class="playlist-panel">
         <div class="playlist-header">
           <div class="title">播放列表 ({{ playlist.length }})</div>
-          <van-button icon="cross" size="small" plain @click="showPlaylist = false" />
+          <div class="header-actions">
+            <van-button size="small" plain @click="clearPlaylist" v-if="playlist.length > 0">清空</van-button>
+            <van-button icon="cross" size="small" plain @click="showPlaylist = false" />
+          </div>
         </div>
         <div class="playlist-content">
           <div
@@ -126,7 +150,16 @@
               <div class="item-title">{{ displayName(item.title, item.nickname) }}</div>
               <div class="item-series">{{ item.seriesName || '-' }}</div>
             </div>
-            <van-icon v-if="index === currentIndex && isPlaying" name="play-circle" color="#1989fa" />
+            <div class="item-actions">
+              <van-icon v-if="index === currentIndex && isPlaying" name="play-circle" color="#1989fa" />
+              <van-button 
+                size="mini" 
+                icon="cross" 
+                plain
+                @click.stop="removeFromPlaylist(index)" 
+                v-if="!(index === currentIndex && isPlaying)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -152,6 +185,7 @@ import { getSeriesOptions } from '../../api/series';
 import { saveAudioPlayerState, getAudioPlayerState } from '../../api/audioPlayer';
 import { recordPlay } from '../../api/recentPlay';
 import type { MediaItem } from '../../types/media';
+import type { PictureBookItem } from '../../types/pictureBook';
 import { PlayMode, type AudioPlaylistItem } from '../../types/media';
 import { ageLabel, displayName } from '../../utils/format';
 import PictureBookCard from '../../components/PictureBookCard.vue';
@@ -163,7 +197,8 @@ const keyword = ref('');
 const ageRange = ref('');
 const seriesId = ref<number | ''>('');
 const sortBy = ref('created');
-const list = ref<MediaItem[]>([]);
+const mediaList = ref<MediaItem[]>([]);
+const bookList = ref<PictureBookItem[]>([]);
 const loading = ref(false);
 const finished = ref(false);
 const page = ref(1);
@@ -189,6 +224,7 @@ let saveStateTimer: number | undefined;
 
 const mediaTypeMap = ['AUDIO', 'VIDEO', 'PICTURE_BOOK'];
 const activeMediaType = computed(() => mediaTypeMap[tabIndex.value]);
+const displayCount = computed(() => (activeMediaType.value === 'PICTURE_BOOK' ? bookList.value.length : mediaList.value.length));
 const currentTimeText = computed(() => formatSeconds((audioRef.value?.currentTime || 0)));
 const totalTimeText = computed(() => formatSeconds((audioRef.value?.duration || 0)));
 
@@ -273,11 +309,12 @@ async function fetchList(reset: boolean) {
     let data;
     if (activeMediaType.value === 'PICTURE_BOOK') {
       data = await getPictureBookList(params);
+      bookList.value = reset ? data.records : [...bookList.value, ...data.records];
     } else {
       data = await getMediaList({ ...params, mediaType: activeMediaType.value });
+      mediaList.value = reset ? data.records : [...mediaList.value, ...data.records];
     }
-    list.value = reset ? data.records : [...list.value, ...data.records];
-    finished.value = list.value.length >= data.total;
+    finished.value = displayCount.value >= data.total;
   } finally {
     loading.value = false;
   }
@@ -312,7 +349,7 @@ async function onPlay(item: MediaItem) {
   }
   
   // 构建播放列表
-  const audioList = list.value.filter(it => it.mediaType === 'AUDIO');
+  const audioList = mediaList.value.filter(it => it.mediaType === 'AUDIO');
   playlist.value = audioList.map(it => ({
     resourceId: it.id,
     title: it.title,
@@ -459,7 +496,7 @@ async function playAtIndex(index: number) {
   const item = playlist.value[index];
   
   // 查找对应的 MediaItem
-  const mediaItem = list.value.find(it => it.id === item.resourceId);
+  const mediaItem = mediaList.value.find(it => it.id === item.resourceId);
   if (!mediaItem) return;
   
   currentAudio.value = mediaItem;
@@ -525,7 +562,7 @@ async function restorePlayerState() {
     shuffleBag.value = state.shuffleBag || [];
     
     // 查找对应的 MediaItem
-    const mediaItem = list.value.find(it => it.id === state.currentResourceId);
+    const mediaItem = mediaList.value.find(it => it.id === state.currentResourceId);
     if (!mediaItem) return;
     
     currentAudio.value = mediaItem;
@@ -586,6 +623,75 @@ async function submitAudioRate() {
   showAudioRate.value = false;
   showSuccessToast('评分成功');
 }
+
+function handleLogout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  localStorage.removeItem('role');
+  router.push('/login');
+  showSuccessToast('已退出登录');
+}
+
+function addToPlaylist(item: MediaItem) {
+  const exists = playlist.value.some(it => it.resourceId === item.id);
+  if (exists) {
+    showFailToast('已在播放列表中');
+    return;
+  }
+  
+  playlist.value.push({
+    resourceId: item.id,
+    title: item.title,
+    nickname: item.nickname,
+    coverUrl: item.coverUrl,
+    playUrl: item.playUrl,
+    seriesName: item.series
+  });
+  
+  showSuccessToast('已加入播放列表');
+  debounceSaveState();
+}
+
+function removeFromPlaylist(index: number) {
+  if (index === currentIndex.value && isPlaying.value) {
+    showFailToast('无法删除正在播放的音频');
+    return;
+  }
+  
+  playlist.value.splice(index, 1);
+  if (playlist.value.length === 0) {
+    currentIndex.value = 0;
+    currentAudio.value = null;
+    showPlaylist.value = false;
+    showSuccessToast('已从播放列表移除');
+    debounceSaveState();
+    return;
+  }
+  
+  if (index < currentIndex.value) {
+    currentIndex.value -= 1;
+  } else if (currentIndex.value >= playlist.value.length) {
+    currentIndex.value = playlist.value.length - 1;
+  }
+  
+  showSuccessToast('已从播放列表移除');
+  debounceSaveState();
+}
+
+function clearPlaylist() {
+  if (isPlaying.value) {
+    showFailToast('请先停止播放');
+    return;
+  }
+  
+  playlist.value = [];
+  currentIndex.value = 0;
+  currentAudio.value = null;
+  progress.value = 0;
+  showPlaylist.value = false;
+  showSuccessToast('已清空播放列表');
+  debounceSaveState();
+}
 </script>
 
 <style scoped>
@@ -597,14 +703,63 @@ async function submitAudioRate() {
   display: flex;
   gap: 8px;
   align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+  border-radius: 24px;
 }
 
 .search-input {
   flex: 1;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.search-input :deep(.van-field__control) {
+  font-size: 16px;
+}
+
+.search-input :deep(.van-field__left-icon) {
+  color: #667eea;
 }
 
 .search-btn {
   flex-shrink: 0;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 0 24px;
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+  transition: transform 0.2s;
+}
+
+.search-btn:active {
+  transform: scale(0.95);
+}
+
+.tabs-section {
+  position: relative;
+  padding-right: 140px;
+}
+
+.quick-actions {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.action-btn {
+  min-width: 36px;
+  padding: 0 8px;
+}
+
+.action-btn :deep(.van-icon) {
+  font-size: 16px;
 }
 
 .list-wrap {
@@ -617,6 +772,17 @@ async function submitAudioRate() {
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.media-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.add-btn {
+  min-width: 60px;
 }
 
 .cover {
@@ -681,6 +847,8 @@ async function submitAudioRate() {
   max-width: var(--page-max-width);
   bottom: 10px;
   z-index: 100;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -716,8 +884,72 @@ async function submitAudioRate() {
   flex-shrink: 0;
 }
 
+.audio-expand-btn :deep(.van-button) {
+  border: none;
+}
+
 .audio-progress {
   margin-top: 4px;
+}
+
+.audio-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #e8e8e8;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.control-btn:active {
+  transform: scale(0.9);
+  border-color: #1989fa;
+}
+
+.control-btn:disabled {
+  opacity: 0.3;
+}
+
+.mode-btn {
+  width: auto;
+  min-width: 60px;
+  border-radius: 22px;
+  padding: 0 12px;
+}
+
+.mode-text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.control-btn-main {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.control-btn-main:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.control-btn-main :deep(.van-icon) {
+  color: white;
+  font-size: 24px;
 }
 
 .drawer {
@@ -739,10 +971,6 @@ async function submitAudioRate() {
   justify-content: center;
 }
 
-.mode-btn {
-  min-width: 60px;
-}
-
 .playlist-info {
   text-align: center;
   font-size: 12px;
@@ -762,6 +990,12 @@ async function submitAudioRate() {
   align-items: center;
   padding: 16px;
   border-bottom: 1px solid #eee;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .playlist-content {
@@ -813,6 +1047,13 @@ async function submitAudioRate() {
   margin-top: 2px;
 }
 
+.item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
 .rate-wrap {
   padding: 20px;
   text-align: center;
@@ -823,5 +1064,27 @@ async function submitAudioRate() {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .search-bar {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .search-btn {
+    padding: 0 18px;
+  }
+
+  .tabs-section {
+    padding-right: 0;
+  }
+
+  .quick-actions {
+    position: static;
+    transform: none;
+    margin-top: 12px;
+    justify-content: flex-end;
+  }
 }
 </style>
