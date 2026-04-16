@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- 背景圆 -->
+  <circle cx="100" cy="100" r="100" fill="#E8F4FF"/>
+  
+  <!-- 头部 -->
+  <ellipse cx="100" cy="90" rx="45" ry="50" fill="#FFD4A3"/>
+  
+  <!-- 头发 -->
+  <path d="M 55 70 Q 50 50 60 40 Q 70 30 85 35 Q 95 25 105 25 Q 115 25 125 35 Q 140 30 150 40 Q 160 50 145 70 Z" fill="#8B4513"/>
+  
+  <!-- 刘海 -->
+  <ellipse cx="75" cy="55" rx="12" ry="18" fill="#8B4513"/>
+  <ellipse cx="100" cy="50" rx="15" ry="20" fill="#8B4513"/>
+  <ellipse cx="125" cy="55" rx="12" ry="18" fill="#8B4513"/>
+  
+  <!-- 左眼 -->
+  <ellipse cx="85" cy="85" rx="8" ry="12" fill="#2C1810"/>
+  <ellipse cx="87" cy="82" rx="3" ry="4" fill="#FFFFFF"/>
+  
+  <!-- 右眼 -->
+  <ellipse cx="115" cy="85" rx="8" ry="12" fill="#2C1810"/>
+  <ellipse cx="117" cy="82" rx="3" ry="4" fill="#FFFFFF"/>
+  
+  <!-- 腮红 -->
+  <ellipse cx="70" cy="95" rx="10" ry="6" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="130" cy="95" rx="10" ry="6" fill="#FFB6C1" opacity="0.6"/>
+  
+  <!-- 嘴巴 -->
+  <path d="M 90 105 Q 100 112 110 105" stroke="#FF6B9D" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- 身体 -->
+  <ellipse cx="100" cy="155" rx="40" ry="35" fill="#667EEA"/>
+  
+  <!-- 衣领 -->
+  <path d="M 80 135 Q 100 145 120 135" fill="#FFFFFF"/>
+  
+  <!-- 手臂左 -->
+  <ellipse cx="65" cy="150" rx="12" ry="30" fill="#FFD4A3" transform="rotate(-20 65 150)"/>
+  
+  <!-- 手臂右 -->
+  <ellipse cx="135" cy="150" rx="12" ry="30" fill="#FFD4A3" transform="rotate(20 135 150)"/>
+  
+  <!-- 书本 -->
+  <rect x="85" y="165" width="30" height="25" rx="2" fill="#FF6B9D"/>
+  <line x1="100" y1="165" x2="100" y2="190" stroke="#FFFFFF" stroke-width="1.5"/>
+  <line x1="85" y1="177" x2="115" y2="177" stroke="#FFFFFF" stroke-width="1"/>
+  
+  <!-- 星星装饰 -->
+  <path d="M 30 40 L 32 46 L 38 46 L 33 50 L 35 56 L 30 52 L 25 56 L 27 50 L 22 46 L 28 46 Z" fill="#FFD700"/>
+  <path d="M 170 35 L 172 41 L 178 41 L 173 45 L 175 51 L 170 47 L 165 51 L 167 45 L 162 41 L 168 41 Z" fill="#FFD700"/>
+  <path d="M 160 160 L 162 166 L 168 166 L 163 170 L 165 176 L 160 172 L 155 176 L 157 170 L 152 166 L 158 166 Z" fill="#FFD700"/>
+</svg>

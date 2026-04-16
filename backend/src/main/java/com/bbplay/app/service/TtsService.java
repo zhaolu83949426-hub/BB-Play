@@ -3,9 +3,9 @@ package com.bbplay.app.service;
 import com.bbplay.app.dto.TtsSynthesizeResponse;
 
 /**
- * 阿里云 TTS 服务
+ * TTS 服务接口
  */
-public interface AliyunTtsService {
+public interface TtsService {
 
     /**
      * 合成语音

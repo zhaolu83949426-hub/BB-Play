@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/audio/tts/**").permitAll()
                         .requestMatchers("/api/media/**").permitAll()
                         .requestMatchers("/api/series/options").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

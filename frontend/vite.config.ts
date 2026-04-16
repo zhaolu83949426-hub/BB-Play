@@ -16,6 +16,10 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     proxy: {
+      '/api': {
+        target: 'http://192.168.12.54:18180',
+        changeOrigin: true
+      },
       '/bbplay-server': {
         target: 'http://192.168.12.54:18180',
         changeOrigin: true,

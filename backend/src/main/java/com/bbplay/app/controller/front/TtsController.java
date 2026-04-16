@@ -3,7 +3,7 @@ package com.bbplay.app.controller.front;
 import com.bbplay.app.common.ApiResponse;
 import com.bbplay.app.dto.TtsSynthesizeRequest;
 import com.bbplay.app.dto.TtsSynthesizeResponse;
-import com.bbplay.app.service.AliyunTtsService;
+import com.bbplay.app.service.TtsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -21,14 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/tts")
 public class TtsController {
 
-    private final AliyunTtsService aliyunTtsService;
+    private final TtsService ttsService;
 
     /**
      * 文字转语音
      */
     @PostMapping("/synthesize")
     public ApiResponse<TtsSynthesizeResponse> synthesize(@RequestBody @Valid TtsSynthesizeRequest request) {
-        TtsSynthesizeResponse response = aliyunTtsService.synthesize(
+        TtsSynthesizeResponse response = ttsService.synthesize(
             request.getText(),
             request.getVoice(),
             request.getSpeed()

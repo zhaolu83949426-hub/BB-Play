@@ -8,7 +8,8 @@
         class="search-input"
         left-icon="search"
       />
-      <van-button type="primary" round @click="onSearch" class="search-btn" icon="search">搜索</van-button>
+      <van-button type="primary" round @click="onSearch" class="search-btn" icon="search" />
+      <van-button plain round @click="router.push('/profile')" class="profile-btn" icon="user-o" />
     </div>
 
     <div class="card section">
@@ -25,11 +26,6 @@
         <van-tab title="视频"></van-tab>
         <van-tab title="绘本"></van-tab>
       </van-tabs>
-      <div class="quick-actions">
-        <van-button size="small" plain round icon="star-o" @click="router.push('/favorites')" class="action-btn" />
-        <van-button size="small" plain round icon="clock-o" @click="router.push('/recent-play')" class="action-btn" />
-        <van-button size="small" plain round icon="user-o" @click="handleLogout" class="action-btn" />
-      </div>
     </div>
 
     <div class="section list-wrap">
@@ -91,12 +87,19 @@
       </div>
       <van-slider v-model="progress" @change="onSeek" class="audio-progress" />
       <div class="audio-controls">
-        <van-button icon="replay" @click="cyclePlayMode" class="control-btn mode-btn">
+        <button class="audio-control mode-toggle-btn" @click="cyclePlayMode" type="button">
+          <img :src="modeIcon" :alt="`${playModeText}模式`" class="audio-mode-icon" />
           <span class="mode-text">{{ playModeText }}</span>
-        </van-button>
-        <van-button icon="arrow-left" @click="playPrevious" :disabled="!canPlayPrevious" class="control-btn prev-btn" />
-        <van-button :icon="isPlaying ? 'pause' : 'play'" @click="togglePlay" class="control-btn-main play-btn" />
-        <van-button icon="arrow" @click="playNext" :disabled="!canPlayNext" class="control-btn next-btn" />
+        </button>
+        <button class="audio-control icon-btn" @click="playPrevious" :disabled="!canPlayPrevious" type="button">
+          <img :src="prevIcon" alt="上一首" class="audio-btn-icon" />
+        </button>
+        <button class="audio-control main-play-btn" @click="togglePlay" type="button">
+          <img :src="isPlaying ? pauseIcon : playIcon" :alt="isPlaying ? '暂停' : '播放'" class="audio-btn-icon main-icon" />
+        </button>
+        <button class="audio-control icon-btn" @click="playNext" :disabled="!canPlayNext" type="button">
+          <img :src="nextIcon" alt="下一首" class="audio-btn-icon" />
+        </button>
       </div>
       <audio
         ref="audioRef"
@@ -116,13 +119,20 @@
         <div class="sub">{{ currentTimeText }} / {{ totalTimeText }}</div>
         <van-slider v-model="progress" @change="onSeek" />
         <div class="control-row">
-          <van-button icon="replay" size="small" @click="cyclePlayMode" class="mode-btn">
-            {{ playModeText }}
-          </van-button>
-          <van-button icon="arrow-left" size="small" @click="playPrevious" :disabled="!canPlayPrevious" />
-          <van-button type="primary" round @click="togglePlay">{{ isPlaying ? '暂停' : '播放' }}</van-button>
-          <van-button icon="arrow" size="small" @click="playNext" :disabled="!canPlayNext" />
-          <van-button round @click="showDrawer = false">收起</van-button>
+          <button class="drawer-control drawer-mode-btn" @click="cyclePlayMode" type="button">
+            <img :src="modeIcon" :alt="`${playModeText}模式`" class="audio-mode-icon" />
+            <span>{{ playModeText }}</span>
+          </button>
+          <button class="drawer-control drawer-icon-btn" @click="playPrevious" :disabled="!canPlayPrevious" type="button">
+            <img :src="prevIcon" alt="上一首" class="audio-btn-icon" />
+          </button>
+          <button class="drawer-control drawer-play-btn" @click="togglePlay" type="button">
+            <img :src="isPlaying ? pauseIcon : playIcon" :alt="isPlaying ? '暂停' : '播放'" class="audio-btn-icon main-icon" />
+          </button>
+          <button class="drawer-control drawer-icon-btn" @click="playNext" :disabled="!canPlayNext" type="button">
+            <img :src="nextIcon" alt="下一首" class="audio-btn-icon" />
+          </button>
+          <button class="drawer-control drawer-close-btn" @click="showDrawer = false" type="button">收起</button>
         </div>
         <div class="playlist-info">{{ playlistInfo }}</div>
       </div>
@@ -191,6 +201,12 @@ import { ageLabel, displayName } from '../../utils/format';
 import PictureBookCard from '../../components/PictureBookCard.vue';
 
 const defaultCover = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22160%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23dce8fb%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%235f7297%22 font-size=%2214%22%3E封面%3C/text%3E%3C/svg%3E';
+const playIcon = '/icons/play.svg';
+const pauseIcon = '/icons/pause.svg';
+const prevIcon = '/icons/prev.svg';
+const nextIcon = '/icons/next.svg';
+const autoModeIcon = '/icons/auto-mode.svg';
+const manualModeIcon = '/icons/manual-mode.svg';
 const router = useRouter();
 const keywordInput = ref('');
 const keyword = ref('');
@@ -227,6 +243,7 @@ const activeMediaType = computed(() => mediaTypeMap[tabIndex.value]);
 const displayCount = computed(() => (activeMediaType.value === 'PICTURE_BOOK' ? bookList.value.length : mediaList.value.length));
 const currentTimeText = computed(() => formatSeconds((audioRef.value?.currentTime || 0)));
 const totalTimeText = computed(() => formatSeconds((audioRef.value?.duration || 0)));
+const modeIcon = computed(() => (playMode.value === PlayMode.SINGLE_LOOP ? manualModeIcon : autoModeIcon));
 
 const playModeText = computed(() => {
   switch (playMode.value) {
@@ -727,9 +744,9 @@ function clearPlaylist() {
   flex-shrink: 0;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   border: none;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 0 24px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
   transition: transform 0.2s;
 }
@@ -738,28 +755,28 @@ function clearPlaylist() {
   transform: scale(0.95);
 }
 
-.tabs-section {
-  position: relative;
-  padding-right: 140px;
+.search-btn :deep(.van-icon) {
+  font-size: 20px;
 }
 
-.quick-actions {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  gap: 8px;
-  z-index: 10;
+.profile-btn {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid white;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s;
 }
 
-.action-btn {
-  min-width: 36px;
-  padding: 0 8px;
+.profile-btn:active {
+  transform: scale(0.95);
 }
 
-.action-btn :deep(.van-icon) {
-  font-size: 16px;
+.profile-btn :deep(.van-icon) {
+  font-size: 20px;
+  color: #667eea;
 }
 
 .list-wrap {
@@ -847,9 +864,26 @@ function clearPlaylist() {
   max-width: var(--page-max-width);
   bottom: 10px;
   z-index: 100;
+  overflow: hidden;
   border-radius: 24px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 244, 235, 0.38) 100%),
+    rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(18px) saturate(155%);
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 30px rgba(183, 128, 93, 0.18),
+    0 2px 10px rgba(255, 255, 255, 0.24);
+}
+
+.audio-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 38%);
 }
 
 .audio-bar-content {
@@ -885,7 +919,11 @@ function clearPlaylist() {
 }
 
 .audio-expand-btn :deep(.van-button) {
-  border: none;
+  border: 3px solid #2d2a32;
+  background: linear-gradient(180deg, #fef9ff 0%, #e8ecff 100%);
+  color: #40327a;
+  font-weight: 700;
+  box-shadow: 0 4px 0 #cfd8ff;
 }
 
 .audio-progress {
@@ -900,60 +938,87 @@ function clearPlaylist() {
   margin-top: 12px;
 }
 
-.control-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid #e8e8e8;
-  transition: all 0.3s ease;
+.audio-control {
+  border: 3px solid #2d2a32;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 
-.control-btn:active {
-  transform: scale(0.9);
-  border-color: #1989fa;
+.audio-control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.control-btn:disabled {
-  opacity: 0.3;
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe0c7 100%);
+  box-shadow: 0 6px 0 #f2b999, 0 12px 22px rgba(227, 150, 101, 0.18);
 }
 
-.mode-btn {
-  width: auto;
-  min-width: 60px;
+.icon-btn:not(:disabled):hover,
+.mode-toggle-btn:not(:disabled):hover,
+.drawer-control:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.icon-btn:not(:disabled):active,
+.mode-toggle-btn:not(:disabled):active,
+.drawer-control:not(:disabled):active {
+  transform: translateY(3px);
+}
+
+.main-play-btn {
+  width: 62px;
+  height: 62px;
   border-radius: 22px;
-  padding: 0 12px;
+  background: linear-gradient(180deg, #fff6ff 0%, #ffd2ea 100%);
+  box-shadow: 0 8px 0 #f3a8c4, 0 16px 26px rgba(244, 153, 193, 0.24);
+}
+
+.mode-toggle-btn {
+  gap: 8px;
+  min-width: 92px;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fef9ff 0%, #e8ecff 100%);
+  box-shadow: 0 6px 0 #cfd8ff, 0 12px 24px rgba(129, 140, 248, 0.18);
+  color: #40327a;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .mode-text {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
-.control-btn-main {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.audio-btn-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
 }
 
-.control-btn-main:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+.main-icon {
+  width: 36px;
+  height: 36px;
 }
 
-.control-btn-main :deep(.van-icon) {
-  color: white;
-  font-size: 24px;
+.audio-mode-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .drawer {
-  padding: 16px;
+  padding: 18px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff6ee 100%);
 }
 
 .drawer-header {
@@ -965,10 +1030,59 @@ function clearPlaylist() {
 
 .control-row {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 14px;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+}
+
+.drawer-control {
+  border: 3px solid #2d2a32;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe0c7 100%);
+  box-shadow: 0 6px 0 #f2b999, 0 12px 22px rgba(227, 150, 101, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b4b4b;
+  cursor: pointer;
+}
+
+.drawer-icon-btn {
+  width: 48px;
+  padding: 0;
+}
+
+.drawer-play-btn {
+  width: 62px;
+  min-height: 62px;
+  border-radius: 22px;
+  padding: 0;
+  background: linear-gradient(180deg, #fff6ff 0%, #ffd2ea 100%);
+  box-shadow: 0 8px 0 #f3a8c4, 0 16px 26px rgba(244, 153, 193, 0.24);
+}
+
+.drawer-mode-btn {
+  background: linear-gradient(180deg, #fef9ff 0%, #e8ecff 100%);
+  box-shadow: 0 6px 0 #cfd8ff, 0 12px 24px rgba(129, 140, 248, 0.18);
+  color: #40327a;
+}
+
+.drawer-close-btn {
+  background: linear-gradient(180deg, #fff8df 0%, #ffe4b7 100%);
+  box-shadow: 0 6px 0 #f3cc8d, 0 12px 24px rgba(243, 204, 141, 0.18);
+}
+
+.drawer-control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .playlist-info {
@@ -982,6 +1096,8 @@ function clearPlaylist() {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: rgba(232, 244, 255, 0.95);
+  backdrop-filter: blur(10px);
 }
 
 .playlist-header {
@@ -989,7 +1105,15 @@ function clearPlaylist() {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-bottom: 1px solid #eee;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.playlist-header .title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
 }
 
 .header-actions {
@@ -998,34 +1122,49 @@ function clearPlaylist() {
   gap: 8px;
 }
 
+.header-actions .van-button {
+  border-radius: 12px;
+}
+
 .playlist-content {
   flex: 1;
   overflow-y: auto;
+  padding: 8px;
 }
 
 .playlist-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f5f5f5;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .playlist-item:active {
-  background-color: #f5f5f5;
+  transform: scale(0.98);
 }
 
 .playlist-item.active {
-  background-color: #e8f4ff;
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .item-index {
   font-size: 14px;
-  color: var(--text-sub);
+  font-weight: 600;
+  color: #999;
   min-width: 24px;
   text-align: center;
+}
+
+.playlist-item.active .item-index {
+  color: #667eea;
 }
 
 .item-info {
@@ -1036,22 +1175,32 @@ function clearPlaylist() {
 .item-title {
   font-size: 14px;
   font-weight: 500;
+  color: #333;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.playlist-item.active .item-title {
+  color: #667eea;
+  font-weight: 600;
 }
 
 .item-series {
   font-size: 12px;
-  color: var(--text-sub);
-  margin-top: 2px;
+  color: #999;
 }
 
 .item-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
+  min-width: 36px;
+}
+
+.item-actions .van-button {
+  border-radius: 8px;
 }
 
 .rate-wrap {

@@ -6,6 +6,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/picture-book/:id', component: () => import('../views/front/PictureBookReaderView.vue') },
   { path: '/favorites', component: () => import('../views/front/FavoriteListView.vue') },
   { path: '/recent-play', component: () => import('../views/front/RecentPlayListView.vue') },
+  { path: '/profile', component: () => import('../views/front/ProfileView.vue') },
   { path: '/login', component: () => import('../views/auth/LoginView.vue') },
   { path: '/register', component: () => import('../views/auth/RegisterView.vue') },
   { 

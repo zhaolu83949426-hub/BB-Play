@@ -33,26 +33,37 @@
       </div>
 
       <div class="control-buttons">
-        <van-button 
-          icon="arrow-left" 
+        <button 
+          class="control-btn"
           @click="prevPage" 
           :disabled="currentPageIndex === 0 || (playMode === 'AUTO' && locked)"
-        />
-        <van-button 
-          :icon="isPlaying ? 'pause' : 'play'" 
+        >
+          <img :src="prevIcon" alt="上一页" class="btn-icon" />
+        </button>
+        <button 
+          class="control-btn play-btn"
           @click="togglePlay"
-        />
-        <van-button 
-          icon="arrow" 
+        >
+          <img :src="isPlaying ? pauseIcon : playIcon" 
+               :alt="isPlaying ? '暂停' : '播放'" 
+               class="btn-icon" />
+        </button>
+        <button 
+          class="control-btn"
           @click="nextPage" 
           :disabled="currentPageIndex === pages.length - 1 || (playMode === 'AUTO' && locked)"
-        />
+        >
+          <img :src="nextIcon" alt="下一页" class="btn-icon" />
+        </button>
       </div>
 
       <div class="mode-switch">
-        <van-button size="small" @click="switchMode">
-          {{ playMode === 'AUTO' ? '自动模式' : '手动模式' }}
-        </van-button>
+        <button class="mode-btn" @click="switchMode">
+          <img :src="playMode === 'AUTO' ? autoModeIcon : manualModeIcon" 
+               :alt="playMode === 'AUTO' ? '自动模式' : '手动模式'" 
+               class="mode-icon" />
+          <span>{{ playMode === 'AUTO' ? '自动模式' : '手动模式' }}</span>
+        </button>
       </div>
     </div>
   </div>
@@ -67,6 +78,13 @@ import { getBookProgress, updateBookProgress } from '../../api/bookProgress'
 import { synthesizeTts } from '../../api/tts'
 import { addFavorite, removeFavorite, getFavoriteStatus } from '../../api/favorite'
 import type { PictureBookDetail, PictureBookPage } from '../../types/pictureBook'
+
+const playIcon = '/icons/play.svg'
+const pauseIcon = '/icons/pause.svg'
+const prevIcon = '/icons/prev.svg'
+const nextIcon = '/icons/next.svg'
+const autoModeIcon = '/icons/auto-mode.svg'
+const manualModeIcon = '/icons/manual-mode.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -302,27 +320,117 @@ function onBack() {
 }
 
 .book-controls {
-  background: white;
-  padding: 16px;
-  border-top: 1px solid #eee;
+  background: linear-gradient(180deg, #fffaf2 0%, #fff4eb 100%);
+  padding: 18px 16px 20px;
+  border-top: 3px solid #2d2a32;
+  box-shadow: 0 -8px 24px rgba(255, 178, 107, 0.18);
 }
 
 .progress-indicator {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 14px;
-  color: #666;
+  font-weight: 700;
+  color: #5b4b4b;
 }
 
 .control-buttons {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.control-btn {
+  width: 56px;
+  height: 56px;
+  border: 3px solid #2d2a32;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe0c7 100%);
+  box-shadow: 0 6px 0 #f2b999, 0 12px 24px rgba(227, 150, 101, 0.24);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 2px;
+}
+
+.control-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #f2b999, 0 14px 26px rgba(227, 150, 101, 0.28);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 #f2b999, 0 8px 18px rgba(227, 150, 101, 0.2);
+}
+
+.control-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: 0 4px 0 #d6d0cb;
+  background: linear-gradient(180deg, #f6f2ef 0%, #e4ddd7 100%);
+}
+
+.play-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff6ff 0%, #ffd2ea 100%);
+  box-shadow: 0 8px 0 #f3a8c4, 0 16px 28px rgba(244, 153, 193, 0.28);
+}
+
+.play-btn:hover:not(:disabled) {
+  box-shadow: 0 10px 0 #f3a8c4, 0 18px 30px rgba(244, 153, 193, 0.34);
+}
+
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.play-btn .btn-icon {
+  width: 40px;
+  height: 40px;
 }
 
 .mode-switch {
   text-align: center;
+}
+
+.mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 3px solid #2d2a32;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fef9ff 0%, #e8ecff 100%);
+  box-shadow: 0 6px 0 #cfd8ff, 0 12px 24px rgba(129, 140, 248, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 14px;
+  font-weight: 700;
+  color: #40327a;
+}
+
+.mode-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #cfd8ff, 0 14px 26px rgba(129, 140, 248, 0.26);
+}
+
+.mode-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 #cfd8ff, 0 8px 18px rgba(129, 140, 248, 0.18);
+}
+
+.mode-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
 }
 
 .ml-2 {

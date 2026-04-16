@@ -40,3 +40,14 @@ mybatis-plus:
 jwt:
   secret: ${JWT_SECRET:bb-play-secret-key-for-jwt-token-generation-minimum-256-bits}
   expiration: ${JWT_EXPIRATION:2592000000}
+
+# Edge TTS 配置
+tts:
+  python:
+    path: ${TTS_PYTHON_PATH:python}
+  script:
+    path: ${TTS_SCRIPT_PATH:backend/scripts/tts_synthesize.py}
+  output:
+    dir: ${TTS_OUTPUT_DIR:backend/audio/tts}
+  audio:
+    url-prefix: ${TTS_AUDIO_URL_PREFIX:/api/audio/tts}
