@@ -72,4 +72,8 @@ public final class MediaConverter {
         vo.setRatingCount(item.getRatingCount());
         return vo;
     }
+
+    public static MediaDetailVO toFrontDetail(MediaResource item, Map<Long, String> seriesNameMap) {
+        return toDetail(item, seriesNameMap);
+    }
 }

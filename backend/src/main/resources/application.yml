@@ -46,8 +46,13 @@ tts:
   python:
     path: ${TTS_PYTHON_PATH:python}
   script:
-    path: ${TTS_SCRIPT_PATH:backend/scripts/tts_synthesize.py}
+    path: ${TTS_SCRIPT_PATH:/home/weihu/bbplay/tts_synthesize.py}
   output:
-    dir: ${TTS_OUTPUT_DIR:backend/audio/tts}
+    dir: ${TTS_OUTPUT_DIR:/home/weihu/bbplay/tts-audio}
   audio:
     url-prefix: ${TTS_AUDIO_URL_PREFIX:/api/audio/tts}
+
+# WebDAV 代理播放认证配置（仅在资源链接未携带账号密码时使用）
+webdav:
+  username: ${WEBDAV_USERNAME:}
+  password: ${WEBDAV_PASSWORD:}

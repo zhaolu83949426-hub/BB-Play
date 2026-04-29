@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URL;
 import java.time.LocalDateTime;
 
@@ -82,7 +83,8 @@ public class ResourceLinkTestServiceImpl implements ResourceLinkTestService {
      * 创建连接并设置通用请求头
      */
     private HttpURLConnection createConnection(URL url, String referer) throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        // 链接测试要和真实播放链路一致，直接绕过系统代理访问内网媒体源。
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection(Proxy.NO_PROXY);
         connection.setConnectTimeout(CONNECT_TIMEOUT);
         connection.setReadTimeout(READ_TIMEOUT);
         connection.setRequestProperty("User-Agent", "Mozilla/5.0");

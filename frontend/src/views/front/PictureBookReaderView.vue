@@ -79,12 +79,13 @@ import { synthesizeTts } from '../../api/tts'
 import { addFavorite, removeFavorite, getFavoriteStatus } from '../../api/favorite'
 import type { PictureBookDetail, PictureBookPage } from '../../types/pictureBook'
 
-const playIcon = '/icons/play.svg'
-const pauseIcon = '/icons/pause.svg'
-const prevIcon = '/icons/prev.svg'
-const nextIcon = '/icons/next.svg'
-const autoModeIcon = '/icons/auto-mode.svg'
-const manualModeIcon = '/icons/manual-mode.svg'
+const iconBaseUrl = `${import.meta.env.BASE_URL}icons/`
+const playIcon = `${iconBaseUrl}play.svg`
+const pauseIcon = `${iconBaseUrl}pause.svg`
+const prevIcon = `${iconBaseUrl}prev.svg`
+const nextIcon = `${iconBaseUrl}next.svg`
+const autoModeIcon = `${iconBaseUrl}auto-mode.svg`
+const manualModeIcon = `${iconBaseUrl}manual-mode.svg`
 
 const route = useRoute()
 const router = useRouter()

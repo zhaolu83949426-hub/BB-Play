@@ -2,8 +2,11 @@ import { createApp } from 'vue';
 import Vant from 'vant';
 import App from './App.vue';
 import router from './router';
+import { applySeniorModeClass, getSeniorMode } from './utils/seniorMode';
 import 'vant/lib/index.css';
 import './styles/global.css';
+
+applySeniorModeClass(getSeniorMode());
 
 const app = createApp(App);
 app.config.errorHandler = (error) => {

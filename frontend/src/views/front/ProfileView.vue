@@ -46,6 +46,24 @@
         </div>
         <van-icon name="arrow" class="menu-arrow" />
       </div>
+
+      <div class="card menu-card setting-card">
+        <div class="menu-icon">👴</div>
+        <div class="menu-content">
+          <div class="menu-title">长辈模式</div>
+          <div class="menu-desc">开启后字体会适当放大</div>
+        </div>
+        <van-switch v-model="seniorMode" size="24px" @change="onSeniorModeChange" />
+      </div>
+
+      <div v-if="isAdmin" class="card menu-card" @click="router.push('/admin/media')">
+        <div class="menu-icon">🛠️</div>
+        <div class="menu-content">
+          <div class="menu-title">管理页</div>
+          <div class="menu-desc">进入后台维护资源</div>
+        </div>
+        <van-icon name="arrow" class="menu-arrow" />
+      </div>
     </div>
 
     <!-- 退出登录按钮 -->
@@ -66,12 +84,17 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast } from 'vant'
+import { getSeniorMode, setSeniorMode } from '../../utils/seniorMode'
 
 const router = useRouter()
 const username = ref('')
+const isAdmin = ref(false)
+const seniorMode = ref(false)
 
 onMounted(() => {
   username.value = localStorage.getItem('username') || ''
+  isAdmin.value = localStorage.getItem('role') === 'ADMIN'
+  seniorMode.value = getSeniorMode()
 })
 
 function handleLogout() {
@@ -80,6 +103,10 @@ function handleLogout() {
   localStorage.removeItem('role')
   router.push('/login')
   showSuccessToast('已退出登录')
+}
+
+function onSeniorModeChange(value: boolean) {
+  setSeniorMode(value)
 }
 </script>
 
@@ -314,6 +341,15 @@ function handleLogout() {
 .menu-card:active {
   transform: scale(0.98);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.setting-card {
+  cursor: default;
+}
+
+.setting-card:active {
+  transform: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .menu-icon {

@@ -13,11 +13,11 @@ export interface AudioPlayerStateRequest {
     playUrl: string;
     seriesName?: string;
   }>;
-  currentIndex: number;
-  currentResourceId: number;
+  currentIndex: number | null;
+  currentResourceId: number | null;
   playMode: PlayMode;
-  currentTimeSec: number;
-  durationSec: number;
+  currentTimeSec: number | null;
+  durationSec: number | null;
   shuffleBag: number[];
 }
 

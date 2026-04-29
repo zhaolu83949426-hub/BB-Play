@@ -31,6 +31,11 @@ public class FavoriteItem {
     private String coverUrl;
 
     /**
+     * 播放地址
+     */
+    private String playUrl;
+
+    /**
      * 收藏时间
      */
     private LocalDateTime updatedAt;

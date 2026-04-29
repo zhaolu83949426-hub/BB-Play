@@ -57,6 +57,7 @@ public class FavoriteServiceImpl implements FavoriteService {
             item.setResourceType(resource.getMediaType());
             item.setTitle(resource.getTitle());
             item.setCoverUrl(resource.getCoverUrl());
+            item.setPlayUrl(resource.getPlayUrl());
         }
 
         // 当前时间戳作为 score
@@ -113,6 +114,7 @@ public class FavoriteServiceImpl implements FavoriteService {
             if (itemJson != null) {
                 try {
                     FavoriteItem item = objectMapper.readValue(itemJson.toString(), FavoriteItem.class);
+                    refreshFavoriteSnapshot(item);
                     result.add(item);
                 } catch (JsonProcessingException e) {
                     // 跳过解析失败的项
@@ -132,5 +134,18 @@ public class FavoriteServiceImpl implements FavoriteService {
         String zsetKey = RedisKeyConstants.buildFavZsetKey(uid);
         Double score = redisTemplate.opsForZSet().score(zsetKey, resourceId.toString());
         return score != null;
+    }
+
+    private void refreshFavoriteSnapshot(FavoriteItem item) {
+        if ("PICTURE_BOOK".equals(item.getResourceType()) || item.getPlayUrl() != null) {
+            return;
+        }
+        MediaResource resource = mediaResourceMapper.selectById(item.getResourceId());
+        if (resource == null) {
+            return;
+        }
+        item.setTitle(resource.getTitle());
+        item.setCoverUrl(resource.getCoverUrl());
+        item.setPlayUrl(resource.getPlayUrl());
     }
 }

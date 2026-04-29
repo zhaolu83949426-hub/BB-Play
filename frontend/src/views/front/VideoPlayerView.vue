@@ -12,9 +12,12 @@
       <video
         ref="videoRef"
         :src="detail.playUrl"
-        :poster="detail.coverUrl"
+        :poster="videoPoster"
         class="video"
+        autoplay
         controls
+        playsinline
+        preload="metadata"
         @ended="showRate = true"
       />
       <div class="title">{{ displayName(detail.title, detail.nickname) }}</div>
@@ -36,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { showSuccessToast } from 'vant';
 import { getMediaDetail, postMediaRate } from '../../api/media';
 import type { MediaItem } from '../../types/media';
@@ -45,6 +48,7 @@ import { ageLabel, displayName } from '../../utils/format';
 import FavoriteButton from '../../components/FavoriteButton.vue';
 import { recordPlay } from '../../api/recentPlay';
 
+const HOME_TAB_STORAGE_KEY = 'front-home-tab';
 const route = useRoute();
 const router = useRouter();
 const videoRef = ref<HTMLVideoElement>();
@@ -53,16 +57,21 @@ const showRate = ref(false);
 const rateScore = ref(5);
 let playTimer: number | null = null;
 let hasRecorded = false;
+const DEFAULT_VIDEO_POSTER = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22360%22 viewBox=%220 0 640 360%22%3E%3Crect width=%22640%22 height=%22360%22 rx=%2230%22 fill=%22%23f4f7ff%22/%3E%3Cpath d=%22M266 122c0-13.2 14.4-21.4 25.6-14.7l83.2 51.5c10.7 6.6 10.7 22.6 0 29.2l-83.2 51.5c-11.2 6.9-25.6-1.4-25.6-14.7V122z%22 fill=%22%2390a6d8%22/%3E%3Ctext x=%22320%22 y=%22292%22 text-anchor=%22middle%22 fill=%22%235f7297%22 font-size=%2222%22%3E视频封面加载中%3C/text%3E%3C/svg%3E';
+const videoPoster = computed(() => detail.value?.coverUrl?.trim() || DEFAULT_VIDEO_POSTER);
 
 onMounted(async () => {
   const id = Number(route.params.id);
   detail.value = await getMediaDetail(id);
-  
+  await nextTick();
   // 监听播放事件
   if (videoRef.value) {
     videoRef.value.addEventListener('play', handlePlay);
     videoRef.value.addEventListener('pause', handlePause);
     videoRef.value.addEventListener('ended', handleEnded);
+    void videoRef.value.play().catch(() => {
+      // 浏览器自动播放策略限制时保持静默，用户可手动点击播放
+    });
   }
 });
 
@@ -75,6 +84,13 @@ onUnmounted(() => {
     videoRef.value.removeEventListener('pause', handlePause);
     videoRef.value.removeEventListener('ended', handleEnded);
   }
+});
+
+onBeforeRouteLeave((to) => {
+  if (to.path !== '/') {
+    return;
+  }
+  sessionStorage.setItem(HOME_TAB_STORAGE_KEY, 'video');
 });
 
 // 播放开始：10秒后记录

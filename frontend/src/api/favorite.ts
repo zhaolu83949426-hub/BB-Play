@@ -5,6 +5,7 @@ export interface FavoriteItem {
   resourceType: string
   title: string
   coverUrl: string
+  playUrl?: string
   updatedAt: string
 }
 

@@ -43,44 +43,67 @@
       
       <!-- 音频/视频列表布局 -->
       <template v-else>
-        <div v-for="item in mediaList" :key="item.id" class="card media-row">
-          <img :src="item.coverUrl || defaultCover" class="cover" @error="onCoverError" />
+        <div
+          v-for="item in mediaList"
+          :key="item.id"
+          class="card media-row"
+          :class="{ 'audio-row': item.mediaType === 'AUDIO', 'audio-row-active': isCurrentAudio(item) }"
+        >
+          <button
+            v-if="item.mediaType === 'AUDIO'"
+            class="audio-list-play-btn"
+            :class="{ 'audio-list-play-btn-active': isCurrentAudio(item) }"
+            type="button"
+            @click="onAudioListPlay(item)"
+          >
+            <img
+              :src="isCurrentAudio(item) && isPlaying ? pauseIcon : playIcon"
+              :alt="isCurrentAudio(item) && isPlaying ? '播放中' : '播放'"
+              class="audio-list-play-icon"
+            />
+          </button>
+          <img
+            v-else
+            :src="getVideoCover(item)"
+            class="cover video-cover"
+            alt=""
+            @click="onPlay(item)"
+          />
           <div class="meta">
             <div class="name">{{ displayName(item.title, item.nickname) }}</div>
             <div class="sub line">{{ item.alias || '-' }} | {{ item.series }} | {{ ageLabel(item.ageRange) }}</div>
             <div class="sub line">播放 {{ item.clickCount }} | {{ item.ratingAvg || 0 }}★</div>
           </div>
           <div class="media-actions">
-            <van-button size="small" type="primary" round @click="onPlay(item)">
-              {{ activeMediaType === 'AUDIO' ? '播放' : '观看' }}
-            </van-button>
             <van-button 
-              v-if="activeMediaType === 'AUDIO'" 
+              v-if="item.mediaType === 'AUDIO'" 
               size="small" 
               plain 
               round 
               icon="plus" 
               @click.stop="addToPlaylist(item)"
-              class="add-btn"
+              class="audio-list-add-btn"
             />
+            <van-button v-else size="small" type="primary" round @click="onPlay(item)">
+              观看
+            </van-button>
           </div>
         </div>
       </template>
       
       <van-empty v-if="!displayCount && !loading" description="暂无内容" />
-      <van-button v-if="!finished && displayCount" block plain type="primary" :loading="loading" @click="loadMore">
-        加载更多
-      </van-button>
+      <div
+        v-if="displayCount && !finished"
+        ref="listBottomTrigger"
+        class="list-bottom-trigger"
+        aria-hidden="true"
+      />
     </div>
 
-    <div class="card hidden-zone" @click="onHiddenTap">
-      底部空白区连续点击5次进入管理页
-    </div>
-
-    <div v-if="currentAudio" class="audio-bar card">
+    <div v-if="showAudioBar" class="audio-bar card">
       <div class="audio-bar-content">
         <div class="audio-info">
-          <div class="audio-title">{{ displayName(currentAudio.title, currentAudio.nickname) }}</div>
+          <div class="audio-title">{{ audioBarTitle }}</div>
           <div class="audio-time">{{ currentTimeText }} / {{ totalTimeText }}</div>
         </div>
         <van-button size="small" round type="primary" @click="showPlaylist = true" class="audio-expand-btn" icon="bars">列表</van-button>
@@ -94,7 +117,7 @@
         <button class="audio-control icon-btn" @click="playPrevious" :disabled="!canPlayPrevious" type="button">
           <img :src="prevIcon" alt="上一首" class="audio-btn-icon" />
         </button>
-        <button class="audio-control main-play-btn" @click="togglePlay" type="button">
+        <button class="audio-control main-play-btn" @click="togglePlay" :disabled="!canTogglePlay" type="button">
           <img :src="isPlaying ? pauseIcon : playIcon" :alt="isPlaying ? '暂停' : '播放'" class="audio-btn-icon main-icon" />
         </button>
         <button class="audio-control icon-btn" @click="playNext" :disabled="!canPlayNext" type="button">
@@ -106,6 +129,7 @@
         :src="currentAudio?.playUrl"
         @timeupdate="onTimeUpdate"
         @loadedmetadata="onTimeUpdate"
+        @durationchange="onTimeUpdate"
         @ended="onEnded"
       />
     </div>
@@ -151,17 +175,28 @@
           <div
             v-for="(item, index) in playlist"
             :key="item.resourceId"
-            class="playlist-item"
-            :class="{ active: index === currentIndex }"
-            @click="playAtIndex(index)"
+            class="card playlist-media-row"
+            :class="{ 'playlist-media-row-active': index === currentIndex }"
           >
-            <div class="item-index">{{ index + 1 }}</div>
-            <div class="item-info">
+            <button
+              class="playlist-play-btn"
+              :class="{ 'playlist-play-btn-active': index === currentIndex }"
+              type="button"
+              @click="playAtIndex(index)"
+            >
+              <img
+                :src="index === currentIndex && isPlaying ? pauseIcon : playIcon"
+                :alt="index === currentIndex && isPlaying ? '播放中' : '播放'"
+                class="audio-list-play-icon"
+              />
+            </button>
+            <div class="item-info" @click="playAtIndex(index)">
               <div class="item-title">{{ displayName(item.title, item.nickname) }}</div>
-              <div class="item-series">{{ item.seriesName || '-' }}</div>
+              <div class="item-series line">{{ item.seriesName || '-' }}</div>
+              <div class="item-series">第 {{ index + 1 }} 首</div>
             </div>
             <div class="item-actions">
-              <van-icon v-if="index === currentIndex && isPlaying" name="play-circle" color="#1989fa" />
+              <van-icon v-if="index === currentIndex && isPlaying" name="play-circle" color="#ff8ab6" />
               <van-button 
                 size="mini" 
                 icon="cross" 
@@ -192,7 +227,7 @@ import { showFailToast, showSuccessToast } from 'vant';
 import { getMediaList, postMediaClick, postMediaRate } from '../../api/media';
 import { getPictureBookList } from '../../api/pictureBook';
 import { getSeriesOptions } from '../../api/series';
-import { saveAudioPlayerState, getAudioPlayerState } from '../../api/audioPlayer';
+import { clearAudioPlayerState, saveAudioPlayerState, getAudioPlayerState } from '../../api/audioPlayer';
 import { recordPlay } from '../../api/recentPlay';
 import type { MediaItem } from '../../types/media';
 import type { PictureBookItem } from '../../types/pictureBook';
@@ -200,13 +235,18 @@ import { PlayMode, type AudioPlaylistItem } from '../../types/media';
 import { ageLabel, displayName } from '../../utils/format';
 import PictureBookCard from '../../components/PictureBookCard.vue';
 
-const defaultCover = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22160%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23dce8fb%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%235f7297%22 font-size=%2214%22%3E封面%3C/text%3E%3C/svg%3E';
-const playIcon = '/icons/play.svg';
-const pauseIcon = '/icons/pause.svg';
-const prevIcon = '/icons/prev.svg';
-const nextIcon = '/icons/next.svg';
-const autoModeIcon = '/icons/auto-mode.svg';
-const manualModeIcon = '/icons/manual-mode.svg';
+const HOME_TAB_STORAGE_KEY = 'front-home-tab';
+const VIDEO_TAB_INDEX = 1;
+const AUDIO_BAR_SAFE_OFFSET = 220;
+const LIST_LOAD_AHEAD_OFFSET = 32;
+const DEFAULT_VIDEO_COVER = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22160%22 viewBox=%220 0 240 160%22%3E%3Crect width=%22240%22 height=%22160%22 rx=%2220%22 fill=%22%23f4f7ff%22/%3E%3Cpath d=%22M96 54c0-6.6 7.2-10.7 12.8-7.3l41.6 25.7c5.3 3.3 5.3 11.3 0 14.6l-41.6 25.7C103.2 116 96 111.9 96 105.3V54z%22 fill=%22%2390a6d8%22/%3E%3Ctext x=%22120%22 y=%22134%22 text-anchor=%22middle%22 fill=%22%235f7297%22 font-size=%2214%22%3E视频封面加载中%3C/text%3E%3C/svg%3E';
+const iconBaseUrl = `${import.meta.env.BASE_URL}icons/`;
+const playIcon = `${iconBaseUrl}play.svg`;
+const pauseIcon = `${iconBaseUrl}pause.svg`;
+const prevIcon = `${iconBaseUrl}prev.svg`;
+const nextIcon = `${iconBaseUrl}next.svg`;
+const autoModeIcon = `${iconBaseUrl}auto-mode.svg`;
+const manualModeIcon = `${iconBaseUrl}manual-mode.svg`;
 const router = useRouter();
 const keywordInput = ref('');
 const keyword = ref('');
@@ -215,6 +255,7 @@ const seriesId = ref<number | ''>('');
 const sortBy = ref('created');
 const mediaList = ref<MediaItem[]>([]);
 const bookList = ref<PictureBookItem[]>([]);
+const listBottomTrigger = ref<HTMLDivElement>();
 const loading = ref(false);
 const finished = ref(false);
 const page = ref(1);
@@ -226,14 +267,14 @@ const showDrawer = ref(false);
 const showPlaylist = ref(false);
 const isPlaying = ref(false);
 const progress = ref(0);
+const currentTimeSeconds = ref(0);
+const durationSeconds = ref(0);
 const showAudioRate = ref(false);
 const audioRateScore = ref(5);
-let hiddenTapCount = 0;
-let hiddenTimer: number | undefined;
 
 // 播放列表相关状态
 const playlist = ref<AudioPlaylistItem[]>([]);
-const currentIndex = ref(0);
+const currentIndex = ref<number | null>(null);
 const playMode = ref<PlayMode>(PlayMode.LIST_LOOP);
 const shuffleBag = ref<number[]>([]);
 let saveStateTimer: number | undefined;
@@ -241,9 +282,14 @@ let saveStateTimer: number | undefined;
 const mediaTypeMap = ['AUDIO', 'VIDEO', 'PICTURE_BOOK'];
 const activeMediaType = computed(() => mediaTypeMap[tabIndex.value]);
 const displayCount = computed(() => (activeMediaType.value === 'PICTURE_BOOK' ? bookList.value.length : mediaList.value.length));
-const currentTimeText = computed(() => formatSeconds((audioRef.value?.currentTime || 0)));
-const totalTimeText = computed(() => formatSeconds((audioRef.value?.duration || 0)));
+const currentTimeText = computed(() => formatSeconds(currentTimeSeconds.value));
+const totalTimeText = computed(() => formatSeconds(durationSeconds.value));
 const modeIcon = computed(() => (playMode.value === PlayMode.SINGLE_LOOP ? manualModeIcon : autoModeIcon));
+const showAudioBar = computed(() => activeMediaType.value === 'AUDIO' || currentAudio.value !== null);
+const canTogglePlay = computed(() => currentAudio.value !== null);
+const audioBarTitle = computed(() => (
+  currentAudio.value ? displayName(currentAudio.value.title, currentAudio.value.nickname) : '请选择音频'
+));
 
 const playModeText = computed(() => {
   switch (playMode.value) {
@@ -260,17 +306,18 @@ const playModeText = computed(() => {
 
 const playlistInfo = computed(() => {
   if (playlist.value.length === 0) return '';
-  return `${currentIndex.value + 1} / ${playlist.value.length}`;
+  const currentPosition = currentIndex.value === null ? 0 : currentIndex.value + 1;
+  return `${currentPosition} / ${playlist.value.length}`;
 });
 
 const canPlayPrevious = computed(() => {
-  if (playlist.value.length <= 1) return false;
+  if (playlist.value.length <= 1 || currentIndex.value === null) return false;
   if (playMode.value === PlayMode.LIST_LOOP) return true;
   return currentIndex.value > 0;
 });
 
 const canPlayNext = computed(() => {
-  if (playlist.value.length <= 1) return false;
+  if (playlist.value.length <= 1 || currentIndex.value === null) return false;
   if (playMode.value === PlayMode.LIST_LOOP) return true;
   if (playMode.value === PlayMode.LIST_SHUFFLE) return shuffleBag.value.length > 0;
   return currentIndex.value < playlist.value.length - 1;
@@ -292,6 +339,9 @@ const seriesOptions = ref<Array<{ text: string; value: number | '' }>>([{ text: 
 watch([ageRange, seriesId, sortBy], () => fetchList(true));
 
 onMounted(async () => {
+  restoreHomeTab();
+  window.addEventListener('scroll', handleWindowScroll, { passive: true });
+  window.addEventListener('resize', handleWindowScroll);
   await loadSeries();
   await fetchList(true);
   await restorePlayerState();
@@ -302,6 +352,8 @@ onBeforeUnmount(() => {
   if (saveStateTimer) {
     window.clearTimeout(saveStateTimer);
   }
+  window.removeEventListener('scroll', handleWindowScroll);
+  window.removeEventListener('resize', handleWindowScroll);
 });
 
 async function loadSeries() {
@@ -329,17 +381,29 @@ async function fetchList(reset: boolean) {
       bookList.value = reset ? data.records : [...bookList.value, ...data.records];
     } else {
       data = await getMediaList({ ...params, mediaType: activeMediaType.value });
-      mediaList.value = reset ? data.records : [...mediaList.value, ...data.records];
+      const records = data.records;
+      mediaList.value = reset ? records : [...mediaList.value, ...records];
     }
     finished.value = displayCount.value >= data.total;
   } finally {
     loading.value = false;
+    await nextTick();
+    triggerAutoLoadIfNeeded();
   }
 }
 
 function onSearch() {
   keyword.value = keywordInput.value.trim();
   fetchList(true);
+}
+
+function restoreHomeTab() {
+  const homeTab = sessionStorage.getItem(HOME_TAB_STORAGE_KEY);
+  if (homeTab !== 'video') {
+    return;
+  }
+  tabIndex.value = VIDEO_TAB_INDEX;
+  sessionStorage.removeItem(HOME_TAB_STORAGE_KEY);
 }
 
 function onOpenBook(book: any) {
@@ -357,6 +421,41 @@ function loadMore() {
   fetchList(false);
 }
 
+function handleWindowScroll() {
+  triggerAutoLoadIfNeeded();
+}
+
+function triggerAutoLoadIfNeeded() {
+  if (loading.value || finished.value || !displayCount.value) {
+    return;
+  }
+  if (isListBottomVisible()) {
+    loadMore();
+  }
+}
+
+function isListBottomVisible() {
+  if (!listBottomTrigger.value) {
+    return false;
+  }
+  const triggerTop = listBottomTrigger.value.getBoundingClientRect().top;
+  return triggerTop <= window.innerHeight - getLoadAheadOffset() || isNearPageBottom();
+}
+
+function getLoadAheadOffset() {
+  return showAudioBar.value ? AUDIO_BAR_SAFE_OFFSET : LIST_LOAD_AHEAD_OFFSET;
+}
+
+function isNearPageBottom() {
+  const viewportBottom = window.scrollY + window.innerHeight;
+  const pageBottom = document.documentElement.scrollHeight;
+  return pageBottom - viewportBottom <= getLoadAheadOffset();
+}
+
+function getVideoCover(item: MediaItem) {
+  return item.coverUrl || DEFAULT_VIDEO_COVER;
+}
+
 async function onPlay(item: MediaItem) {
   await postMediaClick(item.id);
   item.clickCount += 1;
@@ -364,39 +463,34 @@ async function onPlay(item: MediaItem) {
     await router.push(`/video/${item.id}`);
     return;
   }
-  
-  // 构建播放列表
-  const audioList = mediaList.value.filter(it => it.mediaType === 'AUDIO');
-  playlist.value = audioList.map(it => ({
-    resourceId: it.id,
-    title: it.title,
-    nickname: it.nickname,
-    coverUrl: it.coverUrl,
-    playUrl: it.playUrl,
-    seriesName: it.series
-  }));
-  
-  currentIndex.value = audioList.findIndex(it => it.id === item.id);
-  if (currentIndex.value === -1) currentIndex.value = 0;
-  
+  currentIndex.value = findPlaylistIndex(item.id);
   currentAudio.value = item;
-  
-  // 如果是随机模式，重新生成随机袋
-  if (playMode.value === PlayMode.LIST_SHUFFLE) {
+  resetAudioDisplay();
+
+  if (playMode.value === PlayMode.LIST_SHUFFLE && currentIndex.value !== null) {
     generateShuffleBag();
+  } else if (currentIndex.value === null) {
+    shuffleBag.value = [];
   }
-  
+
   await nextTick();
   if (!audioRef.value) return;
   await audioRef.value.play();
   isPlaying.value = true;
-  
-  // 保存播放器状态
+
   debounceSaveState();
 }
 
+async function onAudioListPlay(item: MediaItem) {
+  if (isCurrentAudio(item)) {
+    await togglePlay();
+    return;
+  }
+  await onPlay(item);
+}
+
 async function togglePlay() {
-  if (!audioRef.value) return;
+  if (!audioRef.value || !currentAudio.value) return;
   if (audioRef.value.paused) {
     await audioRef.value.play();
     isPlaying.value = true;
@@ -408,7 +502,13 @@ async function togglePlay() {
 }
 
 function onTimeUpdate() {
-  if (!audioRef.value || !audioRef.value.duration) {
+  if (!audioRef.value) {
+    resetAudioDisplay();
+    return;
+  }
+  currentTimeSeconds.value = audioRef.value.currentTime || 0;
+  durationSeconds.value = Number.isFinite(audioRef.value.duration) ? audioRef.value.duration : 0;
+  if (!audioRef.value.duration) {
     progress.value = 0;
     return;
   }
@@ -423,6 +523,7 @@ function onTimeUpdate() {
 function onSeek(value: number) {
   if (!audioRef.value || !audioRef.value.duration) return;
   audioRef.value.currentTime = (value / 100) * audioRef.value.duration;
+  currentTimeSeconds.value = audioRef.value.currentTime;
   debounceSaveState();
 }
 
@@ -470,7 +571,7 @@ function cyclePlayMode() {
 }
 
 async function playPrevious() {
-  if (!canPlayPrevious.value || playlist.value.length === 0) return;
+  if (!canPlayPrevious.value || playlist.value.length === 0 || currentIndex.value === null) return;
   
   let nextIndex: number;
   if (playMode.value === PlayMode.LIST_LOOP) {
@@ -484,7 +585,7 @@ async function playPrevious() {
 }
 
 async function playNext() {
-  if (!canPlayNext.value || playlist.value.length === 0) return;
+  if (!canPlayNext.value || playlist.value.length === 0 || currentIndex.value === null) return;
   
   let nextIndex: number;
   if (playMode.value === PlayMode.SINGLE_LOOP) {
@@ -511,13 +612,9 @@ async function playAtIndex(index: number) {
   
   currentIndex.value = index;
   const item = playlist.value[index];
-  
-  // 查找对应的 MediaItem
-  const mediaItem = mediaList.value.find(it => it.id === item.resourceId);
-  if (!mediaItem) return;
-  
-  currentAudio.value = mediaItem;
+  currentAudio.value = createAudioMediaItem(item);
   await postMediaClick(item.resourceId);
+  resetAudioDisplay();
   
   await nextTick();
   if (!audioRef.value) return;
@@ -528,11 +625,14 @@ async function playAtIndex(index: number) {
 }
 
 function generateShuffleBag() {
-  // 生成不包含当前索引的随机序列
+  if (currentIndex.value === null) {
+    shuffleBag.value = [];
+    return;
+  }
+
   const indices = Array.from({ length: playlist.value.length }, (_, i) => i)
     .filter(i => i !== currentIndex.value);
   
-  // Fisher-Yates 洗牌算法
   for (let i = indices.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [indices[i], indices[j]] = [indices[j], indices[i]];
@@ -551,17 +651,24 @@ function debounceSaveState() {
 }
 
 async function savePlayerState() {
-  if (playlist.value.length === 0 || !currentAudio.value || !audioRef.value) return;
-  
+  if (playlist.value.length === 0) {
+    await clearAudioPlayerState();
+    return;
+  }
+
+  const savedCurrentIndex = getPersistedCurrentIndex();
+  const savedCurrentResourceId = savedCurrentIndex === null ? null : playlist.value[savedCurrentIndex]?.resourceId ?? null;
+  const canRestorePlayback = savedCurrentResourceId !== null && !!audioRef.value;
+
   try {
     await saveAudioPlayerState({
       playlist: playlist.value,
-      currentIndex: currentIndex.value,
-      currentResourceId: currentAudio.value.id,
+      currentIndex: savedCurrentIndex,
+      currentResourceId: savedCurrentResourceId,
       playMode: playMode.value,
-      currentTimeSec: Math.floor(audioRef.value.currentTime || 0),
-      durationSec: Math.floor(audioRef.value.duration || 0),
-      shuffleBag: shuffleBag.value
+      currentTimeSec: canRestorePlayback ? Math.floor(audioRef.value!.currentTime || 0) : null,
+      durationSec: canRestorePlayback ? Math.floor(audioRef.value!.duration || 0) : null,
+      shuffleBag: savedCurrentIndex === null ? [] : shuffleBag.value
     });
   } catch (error) {
     console.error('保存播放器状态失败', error);
@@ -574,57 +681,91 @@ async function restorePlayerState() {
     if (!state || !state.playlist || state.playlist.length === 0) return;
     
     playlist.value = state.playlist;
-    currentIndex.value = state.currentIndex;
-    playMode.value = state.playMode;
+    currentIndex.value = normalizePlaylistIndex(state.currentIndex, state.playlist.length);
+    playMode.value = state.playMode || PlayMode.LIST_LOOP;
     shuffleBag.value = state.shuffleBag || [];
-    
-    // 查找对应的 MediaItem
-    const mediaItem = mediaList.value.find(it => it.id === state.currentResourceId);
-    if (!mediaItem) return;
-    
-    currentAudio.value = mediaItem;
+
+    if (state.currentResourceId === null) {
+      return;
+    }
+
+    const playlistItem = state.playlist.find((item) => item.resourceId === state.currentResourceId);
+    if (!playlistItem) {
+      currentIndex.value = null;
+      return;
+    }
+
+    currentAudio.value = createAudioMediaItem(playlistItem);
     
     await nextTick();
     if (!audioRef.value) return;
     
-    // 恢复播放进度
-    if (state.currentTimeSec && state.durationSec) {
+    if (state.currentTimeSec !== null && state.durationSec !== null) {
       audioRef.value.currentTime = state.currentTimeSec;
+      currentTimeSeconds.value = state.currentTimeSec;
+      durationSeconds.value = state.durationSec;
+      progress.value = state.durationSec > 0 ? Math.floor((state.currentTimeSec / state.durationSec) * 100) : 0;
     }
-    
-    // 不自动播放，等待用户操作
   } catch (error) {
     console.error('恢复播放器状态失败', error);
   }
 }
 
-function onHiddenTap() {
-  hiddenTapCount += 1;
-  if (hiddenTimer) {
-    window.clearTimeout(hiddenTimer);
-  }
-  if (hiddenTapCount >= 5) {
-    hiddenTapCount = 0;
-    const role = localStorage.getItem('role');
-    if (role === 'ADMIN') {
-      router.push('/admin/media');
-    } else {
-      router.push('/login');
-    }
-    return;
-  }
-  hiddenTimer = window.setTimeout(() => {
-    hiddenTapCount = 0;
-  }, 1500);
+function findPlaylistIndex(resourceId: number) {
+  const index = playlist.value.findIndex((item) => item.resourceId === resourceId);
+  return index >= 0 ? index : null;
 }
 
-function onCoverError(event: Event) {
-  const target = event.target as HTMLImageElement;
-  if (target.src !== defaultCover) {
-    target.src = defaultCover;
-    return;
+function normalizePlaylistIndex(index: number | null, length: number) {
+  if (index === null || index < 0 || index >= length) {
+    return null;
   }
-  showFailToast('封面加载失败');
+  return index;
+}
+
+function getPersistedCurrentIndex() {
+  if (currentAudio.value === null || currentIndex.value === null) {
+    return null;
+  }
+  const currentItem = playlist.value[currentIndex.value];
+  if (!currentItem || currentItem.resourceId !== currentAudio.value.id) {
+    return null;
+  }
+  return currentIndex.value;
+}
+
+function createAudioMediaItem(item: AudioPlaylistItem): MediaItem {
+  return {
+    id: item.resourceId,
+    title: item.title,
+    nickname: item.nickname,
+    alias: '',
+    series: item.seriesName || '',
+    seriesId: 0,
+    ageRange: '',
+    mediaType: 'AUDIO',
+    playUrl: item.playUrl,
+    coverUrl: item.coverUrl,
+    description: '',
+    isPublished: true,
+    isAbnormal: false,
+    abnormalRemark: '',
+    sourceRemark: '',
+    sortWeight: 0,
+    clickCount: 0,
+    ratingAvg: 0,
+    ratingCount: 0
+  };
+}
+
+function resetAudioDisplay() {
+  currentTimeSeconds.value = 0;
+  durationSeconds.value = 0;
+  progress.value = 0;
+}
+
+function isCurrentAudio(item: MediaItem) {
+  return item.mediaType === 'AUDIO' && currentAudio.value?.id === item.id;
 }
 
 function formatSeconds(value: number) {
@@ -677,17 +818,22 @@ function removeFromPlaylist(index: number) {
   
   playlist.value.splice(index, 1);
   if (playlist.value.length === 0) {
-    currentIndex.value = 0;
+    currentIndex.value = null;
     currentAudio.value = null;
+    resetAudioDisplay();
     showPlaylist.value = false;
     showSuccessToast('已从播放列表移除');
     debounceSaveState();
     return;
   }
   
-  if (index < currentIndex.value) {
+  if (index === currentIndex.value) {
+    currentIndex.value = null;
+    currentAudio.value = null;
+    resetAudioDisplay();
+  } else if (currentIndex.value !== null && index < currentIndex.value) {
     currentIndex.value -= 1;
-  } else if (currentIndex.value >= playlist.value.length) {
+  } else if (currentIndex.value !== null && currentIndex.value >= playlist.value.length) {
     currentIndex.value = playlist.value.length - 1;
   }
   
@@ -702,9 +848,10 @@ function clearPlaylist() {
   }
   
   playlist.value = [];
-  currentIndex.value = 0;
+  currentIndex.value = null;
   currentAudio.value = null;
-  progress.value = 0;
+  resetAudioDisplay();
+  shuffleBag.value = [];
   showPlaylist.value = false;
   showSuccessToast('已清空播放列表');
   debounceSaveState();
@@ -780,7 +927,11 @@ function clearPlaylist() {
 }
 
 .list-wrap {
-  padding-bottom: 140px;
+  padding-bottom: calc(220px + env(safe-area-inset-bottom));
+}
+
+.list-bottom-trigger {
+  height: 1px;
 }
 
 .media-row {
@@ -789,6 +940,49 @@ function clearPlaylist() {
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+  padding: 14px 16px;
+}
+
+.audio-row {
+  grid-template-columns: 76px 1fr auto;
+  gap: 14px;
+  border: 2px solid rgba(255, 187, 208, 0.32);
+  background: linear-gradient(135deg, #fffdf8 0%, #fff5fb 100%);
+}
+
+.audio-row-active {
+  border-color: #ff8ab6;
+  box-shadow: 0 10px 24px rgba(255, 138, 182, 0.18);
+}
+
+.audio-list-play-btn {
+  width: 64px;
+  height: 64px;
+  border: 3px solid #2d2a32;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #fff8ff 0%, #ffe0ef 100%);
+  box-shadow: 0 7px 0 #f3b5cf, 0 14px 24px rgba(243, 181, 207, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.audio-list-play-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 4px 0 #f3b5cf, 0 10px 18px rgba(243, 181, 207, 0.2);
+}
+
+.audio-list-play-btn-active {
+  background: linear-gradient(180deg, #fff4c8 0%, #ffd48d 100%);
+  box-shadow: 0 7px 0 #f0b96b, 0 14px 24px rgba(240, 185, 107, 0.28);
+}
+
+.audio-list-play-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .media-actions {
@@ -798,7 +992,7 @@ function clearPlaylist() {
   align-items: stretch;
 }
 
-.add-btn {
+.audio-list-add-btn {
   min-width: 60px;
 }
 
@@ -810,10 +1004,25 @@ function clearPlaylist() {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.video-cover {
+  background: #fff;
+  cursor: pointer;
+}
+
 @media (min-width: 768px) {
   .media-row {
     grid-template-columns: 140px 1fr auto;
     gap: 16px;
+  }
+
+  .audio-row {
+    grid-template-columns: 84px 1fr auto;
+  }
+
+  .audio-list-play-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 24px;
   }
 
   .cover {
@@ -841,28 +1050,13 @@ function clearPlaylist() {
   text-overflow: ellipsis;
 }
 
-.hidden-zone {
-  margin-top: 20px;
-  text-align: center;
-  font-size: 11px;
-  color: #8ca0c3;
-  padding: 16px 12px;
-  user-select: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.hidden-zone:active {
-  background-color: #f0f4f9;
-}
-
 .audio-bar {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 24px);
   max-width: var(--page-max-width);
-  bottom: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 100;
   overflow: hidden;
   border-radius: 24px;
@@ -1129,30 +1323,47 @@ function clearPlaylist() {
 .playlist-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 10px;
 }
 
-.playlist-item {
+.playlist-media-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 2px solid rgba(255, 187, 208, 0.28);
+  background: linear-gradient(135deg, #fffdf8 0%, #fff5fb 100%);
+}
+
+.playlist-media-row-active {
+  border-color: #ff8ab6;
+  box-shadow: 0 10px 24px rgba(255, 138, 182, 0.18);
+}
+
+.playlist-play-btn {
+  width: 56px;
+  height: 56px;
+  border: 3px solid #2d2a32;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff8ff 0%, #ffe0ef 100%);
+  box-shadow: 0 7px 0 #f3b5cf, 0 14px 24px rgba(243, 181, 207, 0.24);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  border-radius: 12px;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.playlist-item:active {
-  transform: scale(0.98);
+.playlist-play-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 4px 0 #f3b5cf, 0 10px 18px rgba(243, 181, 207, 0.2);
 }
 
-.playlist-item.active {
-  background: rgba(102, 126, 234, 0.15);
-  border-color: rgba(102, 126, 234, 0.3);
+.playlist-play-btn-active {
+  background: linear-gradient(180deg, #fff4c8 0%, #ffd48d 100%);
+  box-shadow: 0 7px 0 #f0b96b, 0 14px 24px rgba(240, 185, 107, 0.28);
 }
 
 .item-index {
@@ -1163,7 +1374,7 @@ function clearPlaylist() {
   text-align: center;
 }
 
-.playlist-item.active .item-index {
+.playlist-media-row-active .item-index {
   color: #667eea;
 }
 
@@ -1182,7 +1393,7 @@ function clearPlaylist() {
   margin-bottom: 2px;
 }
 
-.playlist-item.active .item-title {
+.playlist-media-row-active .item-title {
   color: #667eea;
   font-weight: 600;
 }

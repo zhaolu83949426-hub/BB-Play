@@ -13,7 +13,7 @@
     <div class="card auth-card">
       <!-- 可爱的顶部插图 -->
       <div class="illustration">
-        <img src="https://illustrations.popsy.co/amber/reading-book.svg" alt="宝宝阅读" class="main-img" />
+        <img :src="loginIllustration" alt="宝宝阅读" class="main-img" />
       </div>
 
       <div class="title">🎨 低龄宝宝视听绘本</div>
@@ -60,9 +60,10 @@ import { login } from '../../api/auth';
 
 const router = useRouter();
 const loading = ref(false);
+const loginIllustration = `${import.meta.env.BASE_URL}avatar-default.svg`;
 const form = reactive({
-  username: '',
-  password: ''
+  username: 'admin',
+  password: 'admin123'
 });
 
 async function handleLogin() {
@@ -82,12 +83,7 @@ async function handleLogin() {
     localStorage.setItem('username', data.username);
     localStorage.setItem('role', data.role);
     showSuccessToast('登录成功');
-    
-    if (data.role === 'ADMIN') {
-      router.push('/admin/media');
-    } else {
-      router.push('/');
-    }
+    router.push('/');
   } catch (error: any) {
     showFailToast(error.message || '登录失败');
   } finally {

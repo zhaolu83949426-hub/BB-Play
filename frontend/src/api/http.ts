@@ -26,7 +26,7 @@ client.interceptors.response.use(undefined, (error) => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('role');
-    window.location.href = '/login';
+    window.location.replace(`${import.meta.env.BASE_URL}#/login`);
     return Promise.reject(error);
   }
   showFailToast(error.message || '网络错误');

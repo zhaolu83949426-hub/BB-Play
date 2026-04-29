@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
+import { applyFrontRouteClass } from '../utils/seniorMode';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('../views/front/HomeView.vue') },
@@ -52,11 +53,12 @@ const routes: RouteRecordRaw[] = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes
 });
 
 router.beforeEach((to, from, next) => {
+  applyFrontRouteClass(to.path);
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 

@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  base: '/bbplay-ui/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -16,14 +17,9 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     proxy: {
-      '/api': {
-        target: 'http://192.168.12.54:18180',
-        changeOrigin: true
-      },
       '/bbplay-server': {
-        target: 'http://192.168.12.54:18180',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/bbplay-server/, '/api')
+        target: 'http://icittest.keymesh.com.cn:11006',
+        changeOrigin: true
       }
     }
   }

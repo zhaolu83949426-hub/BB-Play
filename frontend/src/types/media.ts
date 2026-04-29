@@ -88,11 +88,11 @@ export interface AudioPlaylistItem {
  */
 export interface AudioPlayerState {
   playlist: AudioPlaylistItem[];
-  currentIndex: number;
-  currentResourceId: number;
+  currentIndex: number | null;
+  currentResourceId: number | null;
   playMode: PlayMode;
-  currentTimeSec: number;
-  durationSec: number;
+  currentTimeSec: number | null;
+  durationSec: number | null;
   shuffleBag: number[];
   updatedAt: string;
 }

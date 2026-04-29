@@ -70,7 +70,7 @@ public class MediaServiceImpl implements MediaService {
         if (!resource.getIsPublished() || resource.getIsAbnormal()) {
             throw new BusinessException("资源不可用");
         }
-        return MediaConverter.toDetail(resource, loadSeriesNames(List.of(resource.getSeriesId())));
+        return MediaConverter.toFrontDetail(resource, loadSeriesNames(List.of(resource.getSeriesId())));
     }
 
     @Override
