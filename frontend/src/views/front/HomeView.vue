@@ -41,16 +41,38 @@
         </div>
       </template>
       
-      <!-- 音频/视频列表布局 -->
+      <!-- 视频双列布局 -->
+      <template v-else-if="activeMediaType === 'VIDEO'">
+        <div class="video-grid">
+          <div
+            v-for="item in mediaList"
+            :key="item.id"
+            class="card video-card"
+          >
+            <img
+              :src="getVideoCover(item)"
+              class="video-grid-cover"
+              alt=""
+              @click="onPlay(item)"
+            />
+            <div class="video-meta">
+              <div class="video-title">{{ displayName(item.title, item.nickname) }}</div>
+              <div class="sub video-line">{{ item.alias || '-' }} | {{ item.series }} | {{ ageLabel(item.ageRange) }}</div>
+              <div class="sub video-line">播放 {{ item.clickCount }} | {{ item.ratingAvg || 0 }}★</div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 音频列表布局 -->
       <template v-else>
         <div
           v-for="item in mediaList"
           :key="item.id"
-          class="card media-row"
-          :class="{ 'audio-row': item.mediaType === 'AUDIO', 'audio-row-active': isCurrentAudio(item) }"
+          class="card media-row audio-row"
+          :class="{ 'audio-row-active': isCurrentAudio(item) }"
         >
           <button
-            v-if="item.mediaType === 'AUDIO'"
             class="audio-list-play-btn"
             :class="{ 'audio-list-play-btn-active': isCurrentAudio(item) }"
             type="button"
@@ -62,13 +84,6 @@
               class="audio-list-play-icon"
             />
           </button>
-          <img
-            v-else
-            :src="getVideoCover(item)"
-            class="cover video-cover"
-            alt=""
-            @click="onPlay(item)"
-          />
           <div class="meta">
             <div class="name">{{ displayName(item.title, item.nickname) }}</div>
             <div class="sub line">{{ item.alias || '-' }} | {{ item.series }} | {{ ageLabel(item.ageRange) }}</div>
@@ -76,7 +91,6 @@
           </div>
           <div class="media-actions">
             <van-button 
-              v-if="item.mediaType === 'AUDIO'" 
               size="small" 
               plain 
               round 
@@ -84,9 +98,6 @@
               @click.stop="addToPlaylist(item)"
               class="audio-list-add-btn"
             />
-            <van-button v-else size="small" type="primary" round @click="onPlay(item)">
-              观看
-            </van-button>
           </div>
         </div>
       </template>
@@ -934,6 +945,51 @@ function clearPlaylist() {
   height: 1px;
 }
 
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.video-card {
+  padding: 10px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.video-grid-cover {
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.video-meta {
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.video-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-main);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.video-line {
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .media-row {
   display: grid;
   grid-template-columns: 100px 1fr auto;
@@ -1010,6 +1066,22 @@ function clearPlaylist() {
 }
 
 @media (min-width: 768px) {
+  .video-grid {
+    gap: 14px;
+  }
+
+  .video-card {
+    padding: 12px;
+  }
+
+  .video-grid-cover {
+    height: 170px;
+  }
+
+  .video-title {
+    font-size: 17px;
+  }
+
   .media-row {
     grid-template-columns: 140px 1fr auto;
     gap: 16px;
