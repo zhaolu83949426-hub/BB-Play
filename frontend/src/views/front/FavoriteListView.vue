@@ -30,7 +30,12 @@
             class="audio-list-play-icon"
           />
         </button>
-        <img v-else-if="item.resourceType === 'VIDEO'" :src="item.coverUrl" class="cover video-cover" />
+        <img
+          v-else-if="item.resourceType === 'VIDEO'"
+          :src="item.coverUrl"
+          class="cover video-cover"
+          referrerpolicy="no-referrer"
+        />
         <img v-else :src="item.coverUrl" class="cover" />
         <div class="meta" :class="{ clickable: item.resourceType !== 'AUDIO' }" @click="openFavorite(item)">
           <div class="name">{{ item.title }}</div>

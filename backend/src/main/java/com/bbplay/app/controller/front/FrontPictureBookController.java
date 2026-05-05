@@ -6,10 +6,13 @@ import com.bbplay.app.dto.picturebook.PictureBookListQuery;
 import com.bbplay.app.service.PictureBookService;
 import com.bbplay.app.vo.PictureBookDetailVO;
 import com.bbplay.app.vo.PictureBookFrontItemVO;
+import com.bbplay.app.vo.PictureBookPageVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 前台绘本接口
@@ -36,6 +39,14 @@ public class FrontPictureBookController {
     @GetMapping("/{id}")
     public ApiResponse<PictureBookDetailVO> detail(@PathVariable Long id) {
         return ApiResponse.success(pictureBookService.getFrontDetail(id));
+    }
+
+    /**
+     * 绘本页面查询
+     */
+    @GetMapping("/{id}/pages")
+    public ApiResponse<List<PictureBookPageVO>> pages(@PathVariable Long id) {
+        return ApiResponse.success(pictureBookService.listFrontPages(id));
     }
 
     /**

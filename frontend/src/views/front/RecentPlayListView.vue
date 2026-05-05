@@ -12,7 +12,7 @@
       @load="loadMore"
     >
       <div v-for="item in list" :key="item.resourceId" class="card media-card" @click="goToPlayer(item)">
-        <img :src="item.coverUrl" class="cover" />
+        <img :src="item.coverUrl" class="cover" referrerpolicy="no-referrer" />
         <div class="info">
           <div class="title">{{ item.title }}</div>
           <div class="sub">{{ item.resourceType === 'AUDIO' ? '音频' : '视频' }}</div>

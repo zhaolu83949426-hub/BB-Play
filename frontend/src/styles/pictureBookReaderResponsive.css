@@ -1,0 +1,94 @@
+@media (max-width: 767px) and (orientation: portrait) {
+  .reader-main {
+    min-height: calc(100vh - 150px);
+    padding: 6px;
+  }
+
+  .reader-landscape-frame {
+    height: calc(100vh - 162px);
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .reader-landscape-stage {
+    width: calc(100vh - 170px);
+    height: calc(100vw - 12px);
+    transform: rotate(90deg);
+    transform-origin: center center;
+  }
+
+  .reader-meta {
+    margin-bottom: 5px;
+  }
+
+  .reader-title {
+    font-size: 16px;
+  }
+
+  .book-stage {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 6px;
+  }
+
+  .book-cover {
+    padding: 10px;
+    border-width: 3px;
+    border-radius: 22px;
+  }
+
+  .book-spread {
+    min-height: calc(100vw - 92px);
+  }
+
+  .book-page {
+    padding: 9px 10px 8px;
+  }
+
+  .page-label,
+  .page-text,
+  .reader-subtitle {
+    font-size: 10px;
+  }
+
+  .turn-zone {
+    width: 44px;
+    min-height: calc(100vw - 96px);
+    height: calc(100vw - 96px);
+  }
+
+  .turn-sheet {
+    top: 10px;
+    bottom: 10px;
+    width: calc(50% - 10px);
+  }
+
+  .turn-sheet-next {
+    right: 10px;
+  }
+
+  .turn-sheet-prev {
+    left: 10px;
+  }
+}
+
+@media (min-width: 768px) {
+  .reader-main {
+    padding: 20px;
+  }
+
+  .reader-title {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-sheet-next,
+  .turn-sheet-prev {
+    animation-duration: 1ms;
+  }
+
+  .turn-zone,
+  .control-btn {
+    transition: none;
+  }
+}

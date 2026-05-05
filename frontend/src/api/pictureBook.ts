@@ -17,6 +17,10 @@ export function getPictureBookDetail(id: number) {
   return http.get<PictureBookDetail>(`/picture-books/${id}`)
 }
 
+export function getFrontPictureBookPages(id: number) {
+  return http.get<PictureBookPage[]>(`/picture-books/${id}/pages`)
+}
+
 export function postPictureBookClick(id: number) {
   return http.post<void>(`/picture-books/${id}/click`)
 }

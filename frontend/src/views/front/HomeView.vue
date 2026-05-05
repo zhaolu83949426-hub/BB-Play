@@ -53,6 +53,7 @@
               :src="getVideoCover(item)"
               class="video-grid-cover"
               alt=""
+              referrerpolicy="no-referrer"
               @click="onPlay(item)"
             />
             <div class="video-meta">

@@ -78,6 +78,15 @@ public class PictureBookServiceImpl implements PictureBookService {
     }
 
     @Override
+    public List<PictureBookPageVO> listFrontPages(Long id) {
+        PictureBook book = requireBook(id);
+        if (!book.getIsPublished() || book.getIsAbnormal()) {
+            throw new BusinessException("绘本不可用");
+        }
+        return loadPages(id);
+    }
+
+    @Override
     @Transactional
     public void addClick(Long id) {
         requireBook(id);

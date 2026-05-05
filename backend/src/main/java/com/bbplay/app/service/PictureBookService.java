@@ -8,6 +8,9 @@ import com.bbplay.app.dto.picturebook.PictureBookListQuery;
 import com.bbplay.app.vo.PictureBookAdminItemVO;
 import com.bbplay.app.vo.PictureBookDetailVO;
 import com.bbplay.app.vo.PictureBookFrontItemVO;
+import com.bbplay.app.vo.PictureBookPageVO;
+
+import java.util.List;
 
 /**
  * 绘本业务服务
@@ -17,6 +20,11 @@ public interface PictureBookService {
     PageResult<PictureBookFrontItemVO> listFront(PictureBookListQuery query);
 
     PictureBookDetailVO getFrontDetail(Long id);
+
+    /**
+     * 查询前台绘本全部页面，供阅读页按双页模式加载。
+     */
+    List<PictureBookPageVO> listFrontPages(Long id);
 
     void addClick(Long id);
 
